@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-09-24T04:34:02Z",
+ "generated_utc": "2026-09-24T10:00:31Z",
  "n_scenarios": 100,
  "seed": 42,
  "policies": [
@@ -97,7 +97,7 @@
   "cancelled_flights",
   "critical_missions_completed_pct"
  ],
- "git_commit": "003bba7",
+ "git_commit": "5f0d9ab",
  "git_dirty": false,
  "python": "3.12.9",
  "ortools_version": "9.15.6755",
@@ -1425,31 +1425,37 @@
  "solver": {
   "balanced": {
    "calls": 2438,
+   "cpsat_calls": 2284,
    "optimal_calls": 2284,
    "feasible_not_optimal_calls": 0,
+   "no_feasible_calls": 154,
    "timeout_calls": 0,
-   "max_wall_ms": 3827,
-   "mean_run_wall_s": 2.12,
+   "max_wall_ms": 2878,
+   "mean_run_wall_s": 1.81,
    "runs_not_ok": 0,
    "rejected_assignments": 0
   },
   "medical_first": {
    "calls": 2440,
+   "cpsat_calls": 2286,
    "optimal_calls": 2286,
    "feasible_not_optimal_calls": 0,
+   "no_feasible_calls": 154,
    "timeout_calls": 0,
-   "max_wall_ms": 3050,
-   "mean_run_wall_s": 2.07,
+   "max_wall_ms": 2898,
+   "mean_run_wall_s": 1.77,
    "runs_not_ok": 0,
    "rejected_assignments": 0
   },
   "connectivity_first": {
    "calls": 2448,
+   "cpsat_calls": 2291,
    "optimal_calls": 2291,
    "feasible_not_optimal_calls": 0,
+   "no_feasible_calls": 157,
    "timeout_calls": 0,
-   "max_wall_ms": 3088,
-   "mean_run_wall_s": 2.11,
+   "max_wall_ms": 3156,
+   "mean_run_wall_s": 1.77,
    "runs_not_ok": 0,
    "rejected_assignments": 0
   }
