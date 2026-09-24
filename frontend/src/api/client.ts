@@ -3,7 +3,7 @@
 // backend serves frontend/dist itself. No other network access exists.
 import type {
   CompareResponse, DecisionRecord, DisruptionInput, ExperimentSummary, HealthResponse, ImpactResponse,
-  MetricsInfoResponse, NetworkResponse, Policy, Preset, RunResult, ScenarioState,
+  MetricsInfoResponse, NetworkResponse, Policy, Preset, RunResult, Scenario, ScenarioState,
 } from './types'
 
 export class ApiError extends Error {
@@ -66,6 +66,8 @@ export const api = {
   health: () => request<HealthResponse>('/health'),
   network: () => request<NetworkResponse>('/network'),
   presets: () => request<Preset[]>('/presets'),
+  /** Full preset definition, disruptions in start order. */
+  presetDetail: (preset_id: string) => request<Scenario>(`/presets/${encodeURIComponent(preset_id)}`),
   policies: () => request<Policy[]>('/policies'),
   metricsInfo: () => request<MetricsInfoResponse>('/metrics/info'),
   scenario: () => request<ScenarioState>('/scenario'),

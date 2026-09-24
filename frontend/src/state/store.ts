@@ -1,11 +1,20 @@
 import { create } from 'zustand'
 import { api, ApiError } from '../api/client'
+import { HREF, navigate } from '../router'
 import type {
   CompareResponse, DecisionRecord, DisruptionInput, ExperimentSummary, HealthResponse, ImpactResponse,
   MetricInfo, NetworkResponse, Policy, Preset, RunResult, ScenarioState, StrategyName,
 } from '../api/types'
 
-export type View = 'command' | 'research' | 'responsible'
+/** Legacy view names kept for the demo steps; each maps to a route. */
+export type View = 'command' | 'research' | 'responsible' | 'home' | 'data'
+export const VIEW_HREF: Record<View, string> = {
+  command: HREF.simulation,
+  research: HREF.research,
+  responsible: `${HREF.about}#responsible-ai`,
+  home: HREF.home,
+  data: HREF.data,
+}
 export type Connection = 'unknown' | 'ok' | 'down'
 export type SelectedKind = 'airport' | 'aircraft' | 'route' | 'mission' | 'decision'
 export interface Selected { kind: SelectedKind; id: string }
@@ -142,7 +151,7 @@ export const useStore = create<StoreState>()((set, get) => {
     busy: null,
     errors: [],
 
-    setView: (view) => set({ view }),
+    setView: (view) => { set({ view }); navigate(VIEW_HREF[view]) },
 
     bootstrap: async () => {
       await guarded('boot', async () => {

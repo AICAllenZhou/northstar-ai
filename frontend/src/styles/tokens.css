@@ -1,21 +1,23 @@
 /* NORTHSTAR AI design tokens.
-   Dark polar-night ground, high contrast, one saturated accent (NORTHSTAR teal).
+   Polar-night ground, high contrast, one saturated accent (NORTHSTAR teal).
    Semantic colours are fixed across the whole app and the map:
      medical = pink-red, cargo = amber, passenger = blue, NORTHSTAR = teal,
-     baseline = neutral grey, closed/danger = red, disconnected = amber. */
+     baseline = neutral grey, closed/danger = red, disconnected = amber.
+   Type: IBM Plex Sans Condensed (display), IBM Plex Sans (body/UI), IBM Plex Mono
+   (eyebrows, codes, times, data). All three are bundled, self-hosted, open licence. */
 :root {
   color-scheme: dark;
 
-  --bg-0: #0a0f15;   /* page ground */
-  --bg-1: #10171f;   /* panels */
-  --bg-2: #161f29;   /* raised rows, inputs */
+  --bg-0: #070c14;   /* page ground (polar night) */
+  --bg-1: #0e151f;   /* panels */
+  --bg-2: #151e2a;   /* raised rows, inputs */
   --bg-3: #1d2834;   /* hover */
-  --line: #233040;
-  --line-2: #31404f;
+  --line: #1c2733;
+  --line-2: #2c3a49;
 
-  --ink: #eef3f8;
-  --ink-2: #a9b6c4;
-  --ink-3: #6f8090;
+  --ink: #e9f1f8;
+  --ink-2: #a4b4c4;
+  --ink-3: #6c7d8e;
 
   --ns: #2ee6d6;      /* NORTHSTAR accent (buttons, badges) */
   --ns-2: #1fc2b4;    /* NORTHSTAR chart / map mark */
@@ -41,8 +43,29 @@
   --good-dim: rgba(61, 220, 132, 0.16);
   --loss: #d9734f;    /* "baseline won" in charts */
 
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* Site (landing) additions */
+  --amber: #f5a623;                       /* synthetic data, cut-off communities, wildfire */
+  --amber-dim: rgba(245, 166, 35, 0.14);
+  --ice: #9ec3df;                         /* open routes, real data */
+  --ice-line: rgba(158, 195, 223, 0.42);
+  --ice-dim: rgba(158, 195, 223, 0.12);
+  /* Aurora: hero background, section dividers and the closing band only. */
+  --aurora: linear-gradient(180deg, rgba(46, 230, 214, 0.18) 0%, rgba(61, 220, 132, 0.10) 55%, rgba(61, 220, 132, 0) 100%);
+  --aurora-x: linear-gradient(90deg, rgba(46, 230, 214, 0) 0%, rgba(46, 230, 214, 0.18) 35%, rgba(61, 220, 132, 0.10) 70%, rgba(61, 220, 132, 0) 100%);
+
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Type scale: 13 / 15 / 17 / 22 / 30 / 44 / 64 / 92 */
+  --fs-0: 13px;
+  --fs-1: 15px;
+  --fs-2: 17px;
+  --fs-3: 22px;
+  --fs-4: 30px;
+  --fs-5: 44px;
+  --fs-6: 64px;
+  --fs-7: 92px;
 
   --r-1: 4px;
   --r-2: 8px;
@@ -53,4 +76,7 @@
   --timeline-h: 72px;
   --left-w: 290px;
   --right-w: 440px;
+
+  --site-header-h: 64px;
+  --content-w: 1200px;
 }

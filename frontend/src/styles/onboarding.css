@@ -1,0 +1,8 @@
+.onboard-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(7, 12, 20, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: grid; place-items: center; padding: 24px; }
+.onboard { width: min(580px, 100%); background: var(--bg-1); border: 1px solid var(--line-2); border-radius: 12px; padding: 32px 36px 28px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(46, 230, 214, 0.12); }
+.onboard h2 { font: 700 var(--fs-4)/1.05 var(--font-display); letter-spacing: -0.01em; margin: 0 0 14px; }
+.onboard p { font-size: var(--fs-2); line-height: 1.5; color: var(--ink-2); margin: 0 0 24px; }
+.onboard .eyebrow-brief { margin-bottom: 14px; }
+.onboard-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.onboard-actions .sub { font-weight: 400; opacity: 0.8; }
+@media (max-width: 520px) { .onboard { padding: 24px 22px 22px; } .onboard-actions .btn { width: 100%; } }

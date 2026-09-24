@@ -1,8 +1,28 @@
 # NORTHSTAR AI — frontend
 
 React 19 + TypeScript + MapLibre GL 6 + Recharts 3 + Zustand 5, built with Vite.
-A single-page "command center" for the NORTHSTAR aviation-resilience simulation.
-Everything runs offline against the local FastAPI backend.
+One offline single-page app with two faces: a storytelling site (Home, Research,
+Data, About) and the "command center" simulation. Everything runs against the
+local FastAPI backend; no external request is ever made.
+
+## Routes (hash router, `src/router.ts`)
+
+| Route | Page | Header |
+|---|---|---|
+| `#/` | Landing: hero with the live network loop, situation, research question, method, preview, evidence (from `/api/experiments/latest`), data, limits, launch | site header |
+| `#/simulation` | Command center (mounted on first visit, then kept mounted so the map keeps its state). `?demo=1` starts the guided demo directly. | app header |
+| `#/research` | Research results | site header |
+| `#/data` | Data and provenance (real vs synthetic, dataset sidecars from `/api/network.metadata`) | site header |
+| `#/about` | About the technology, Responsible AI (`#/about#responsible-ai`), credits | site header |
+
+Hash routing survives the static host (the backend serves `index.html` at `/`
+and the hash never reaches the server), so every deep link reloads correctly.
+The store keeps the legacy `view` field for the demo steps; `setView()` maps
+`command` / `research` / `responsible` to the routes above.
+
+On the first visit to `#/simulation` in a browser session a welcome dialog
+offers "Start guided demo" or "Explore on my own" (`sessionStorage`
+`northstar.onboarded`); `#/simulation?demo=1` skips it.
 
 ## Run
 
@@ -24,7 +44,10 @@ Vite proxy (`vite.config.ts` → `server.proxy`) and when served by the backend.
 
 ## Offline design
 
-- No external tiles, fonts, CDNs or telemetry. The basemap is three Natural
+- No external tiles, fonts, CDNs or telemetry. Fonts are bundled from
+  `@fontsource` (IBM Plex Sans Condensed for display, IBM Plex Sans for body
+  and UI, IBM Plex Mono for eyebrows, codes and data; all open licence) and
+  served as same-origin woff2. The basemap is three Natural
   Earth GeoJSON layers fetched from `/api/basemap/{countries,provinces,lakes}`
   and styled as MapLibre fill/line layers in a local style object
   (`src/map/style.ts`). The style declares no `glyphs` or `sprite`, so MapLibre
@@ -49,13 +72,18 @@ src/map/                MapView (imperative MapLibre updates from store subscrip
                         disruption circles, mission arrows, highlight path), markers
                         (aircraft, labels with decluttering, mission icons), geo
                         (great-circle interpolation), InfoPanel, MapLegend
-src/components/         Header, ErrorBanner (+DatasetError), StatusTiles, ScenarioPanel,
-                        DisruptionForm, MissionList, RunPanel, ComparePanel,
-                        DecisionsPanel, Timeline, DemoStepper (+demoSteps)
+src/router.ts           hash router (parse, navigate, useRoute, titles)
+src/components/         Header (app header), Onboarding, ErrorBanner (+DatasetError),
+                        StatusTiles, ScenarioPanel, DisruptionForm, MissionList, RunPanel,
+                        ComparePanel, DecisionsPanel, Timeline, DemoStepper (+demoSteps)
+src/site/               SiteHeader, SiteFooter, Home (+Section, Evidence, DataColumns),
+                        NetworkLoop (+loopModel: projection, closures, cut-off and
+                        reconnection paths), DataPage, AboutPage, copy
 src/views/              CommandCenter, Research (+research/Charts), ResponsibleAI
-src/styles/             tokens (colour semantics), base, header, command, panels,
-                        map, timeline, demo, research, responsible
-scripts/demo_screenshots.mjs   Playwright: drives Demo Mode, saves docs/screenshots/*.png
+src/styles/             tokens (colour, type scale, fonts), base, header, command, panels,
+                        map, timeline, demo, research, responsible, site, onboarding
+public/preview/         command-center.png (copy of docs/screenshots/step-07.png for the teaser)
+scripts/demo_screenshots.mjs   Playwright: landing, pages, onboarding, Demo Mode, failure states
 ```
 
 ## Behaviour notes
@@ -88,6 +116,10 @@ npm i -D playwright && npx playwright install chromium   # once
 node scripts/demo_screenshots.mjs                        # BASE_URL=http://localhost:5174 if the port differs
 ```
 
-Writes `docs/screenshots/step-01.png … step-10.png`, `research.png`,
+Writes, into `docs/screenshots/`: `home-hero.png`, `home-problem.png`,
+`home-how.png`, `home-evidence.png`, `home-data.png`, `home-mobile-390.png`
+(full page at 390×844), `data.png`, `about.png` (full page), `onboarding.png`,
+`app-header.png`, `step-01.png … step-10.png`, `research.png` (full page),
 `responsible-ai.png`, `command-center.png`, `research-empty.png`,
-`backend-down.png` and `narrow-1024.png`.
+`backend-down.png` and `narrow-1024.png`. It also checks that the landing has no
+horizontal overflow at 390, 768 and 1600 px and that no request leaves localhost.

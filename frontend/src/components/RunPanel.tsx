@@ -22,7 +22,7 @@ export function RunPanel() {
     <section className="panel run-panel">
       <div className="run-row">
         <button className="btn ghost small" disabled={disabled} onClick={() => void fetchImpact(true).catch(() => undefined)} title="Simulate the day with the published schedule only">
-          {busy === 'impact' ? <Spinner label="Simulating…" /> : runs.do_nothing ? 'Impact (do nothing) ✓' : 'Show impact · do nothing'}
+          {busy === 'impact' ? <Spinner label="Simulating…" /> : runs.do_nothing ? 'Impact (do nothing) ✓' : 'Show impact if nobody reacts'}
         </button>
         {!hasDisruptions && <span className="hint">Healthy network: runs will simply fly the schedule.</span>}
       </div>
