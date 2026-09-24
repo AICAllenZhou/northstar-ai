@@ -19,6 +19,7 @@ tr.headline .cmp-v { font-size: 16px; }
 .cmp-cell.better .cmp-v { color: var(--good); }
 .cmp-cell.worse { background: var(--danger-dim); }
 .cmp-cell.worse .cmp-v { color: var(--danger); }
+.cmp-cell.better .cmp-sub, .cmp-cell.worse .cmp-sub { color: var(--ink-2); }
 .cmp-cell.same .cmp-v { color: var(--ink-2); }
 .cmp-note { padding: 8px 12px 10px; font-size: 11px; color: var(--ink-3); line-height: 1.35; }
 

@@ -9,6 +9,8 @@
   background: linear-gradient(90deg, var(--ns) var(--pct), var(--line-2) var(--pct));
 }
 .tl-track input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid var(--ns); cursor: pointer; box-shadow: 0 0 0 2px var(--bg-1); }
+.tl-track input[type='range']:focus-visible { outline: 2px solid var(--ns); outline-offset: 4px; }
+.tl-track input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--bg-1), 0 0 0 4px var(--ns); }
 .tl-track input[type='range']::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--ns); cursor: pointer; }
 .tl-ticks { position: absolute; left: 0; right: 0; bottom: 2px; height: 14px; font-size: 10.5px; color: var(--ink-3); font-family: var(--mono); }
 .tl-ticks span { position: absolute; transform: translateX(-50%); }

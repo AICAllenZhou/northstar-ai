@@ -351,3 +351,91 @@ strips above cover it, but a judge scanning the table will not see a loss column
 7. README, readiness checklist and the final product review still describe V0 in places (V5 docs).
 
 **Commit:** e16f190
+
+## Version 5 — "Make it competition-ready"
+
+**Observed problems (from V4):** marker and label collisions at busy hubs and a legend that
+covered Sanikiluaq; the raw generator description in the header when an experiment scenario was
+opened; the explorer's default columns hid the reroute (trade-off) column; the 1280–1439 px
+docked layout and reduced-motion behaviour were implemented but never screenshot-verified; no
+accessibility floor had been checked; the launcher, README, checklist and final review still
+described the first build; no cold-start acceptance from a fresh clone had been run.
+
+**Decisions:** finish, verify, document; add nothing new. The launcher waits for the warm-up
+and leaves the session healthy (done in 4d26c02). A fresh clone must reach a working demo with
+the documented commands; the browser driver is the acceptance test; `--verify` is the
+reproducibility gate; the readiness checklist is rewritten with evidence per line; the final
+product review states strengths, weaknesses, what not to change, what to emphasize, likely judge
+questions and the exact stage path.
+
+Map declutter: mission markers sit above-left of the dot with a fixed offset that clears the
+label row, several missions at one airport fan out, and the label declutter measures real label
+widths, knows about mission markers and parked-aircraft rows, places hub labels first (always
+visible) and tries beside → below → above → left for community labels before hiding one; the
+driver asserts no marker or community label touches a hub label at step 9. The legend is a
+collapsible button (expanded by default at ≥ 1440 px, remembered per viewer), stacked bottom-left
+above the info panel and folded while the panel is open. Generated scenarios opened from the
+Research page now read "1 closure · 2 weather events · 3 medevacs · 2 cargo requests" with the
+sentence "Scenario 96 of the 100-scenario experiment (seed 42); the run buttons solve it live."
+The explorer's default column set is "Resilience 6" (the five headline metrics plus reroutes, so
+the loss column is visible by default). Accessibility floor: every panel eyebrow became a real
+heading (h1 → h2 → h3 with no skips on any page), inputs and selects show a focus ring again
+(a global `outline: none` had removed it), MapLibre's zoom buttons use the site's ring, the
+scrubber thumb has a ring, `--ink-3` was raised from #6c7d8e to #7a8b9c so every text under
+14 px clears 4.5:1 on its real background, and reduced motion now also caps infinite animations
+(they were still cycling at 0.001 ms). Nothing else was added.
+
+**Implementation:** `frontend/src/map/{markers.ts, MapView.tsx, MapLegend.tsx}`, `styles/map.css`;
+`lib/humanize.ts` (`compactDescription`, `scenarioBlurb`, `experimentSentence`), `views/research/
+{paired.ts, Explorer.tsx}`, `views/Research.tsx`, `components/{ScenarioSimple, ScenarioPanel,
+StatusTiles, WhyCard, MissionList, ComparePanel, DecisionsPanel}.tsx`, `site/AboutPage.tsx`;
+`styles/{tokens, base, timeline, simple, panels}.css`; driver (+≈360 lines: accessibility audit,
+contrast sampler, three keyboard walks, 1280 px shots, reduced-motion pass, legend and collision
+checks); `frontend/README.md`. Docs: `README.md` (rewritten: what you get, truth rules, run
+and experiment commands, headline numbers with a pointer to the live page), `docs/WAICY_READINESS_
+CHECKLIST.md` (rewritten with current evidence), `docs/FINAL_WAICY_PRODUCT_REVIEW.md` (new),
+`docs/DEMO_SCRIPT.md` (V2 flow, launcher wording), `docs/IMPLEMENTATION_PLAN.md` §9.1 (items 6–7),
+`docs/ARCHITECTURE.md` (decision record fields), `docs/DATA_AND_EXPERIMENT_METHODOLOGY.md` §7
+(solver accounting); `scripts/{demo.sh,wait_ready.py,smoke_test.py}`.
+
+**Test results:** backend `uv run pytest` 41 passed; `npm run build` 0 errors (JS 1,474 kB / 413 kB
+gzip, CSS 184 kB); `oxlint` 0 warnings; screenshot driver: no external requests, no page or
+console errors, no horizontal overflow at 390 / 768 / 1024 / 1280 / 1440 / 1600 px; guided demo
+step 1 → 10 22.5 s net (30.7 s with the added keyboard walks, collision check and 1280 px shots
+inside the loop); accessibility audit clean on Home, Data, About, Research and Simulation (names,
+labels, alt text, one h1, no heading skips, dialog label); contrast sampler: 0 texts under 14 px
+below 4.5:1 across the five pages (`--ink-3` on panels 4.33 → 5.24); keyboard walks reach the
+header demo button, preset cards, RUN NORTHSTAR AI, the docked card's Back / RUN / Next and the
+timeline in order, every stop with a visible ring; reduced-motion pass at step 9: flow loop not
+running, zero running CSS animations outside MapLibre. Preset performance (API, warm backend,
+balanced): every preset served from the start-up cache in 10–12 ms HTTP; original compute times
+recorded on the results: kivalliq 1.24 s, baffin 0.59 s, kitikmeot 0.85 s, cargo_shortage 5.98 s,
+cascading 0.64 s (NORTHSTAR; baselines ≤ 22 ms); one genuinely uncached custom scenario (Iqaluit
+closed 10:00–14:00 on the healthy network) solved live in 600 ms, `cached: false`, 16 calls all
+OPTIMAL, and NORTHSTAR changed nothing because no mission was affected (a truthful "no change").
+
+**Cold-start acceptance (fresh clone of 8f33780 into a scratch directory, port 8020, warm
+package caches):** clone → `uv sync` 1 s → `npm ci` 2 s → `npm run build` 4 s → `scripts/demo.sh`
+ready after 46 s of warm-up (55 s from clone to "ready"); session on start-up: "Healthy network
+(no disruption)"; full browser driver against the clone: 99 s, no external requests, no page
+errors, no overflow, guided demo 22.4 s; `uv run pytest` 41 passed; launcher stopped, port
+released. Reproducibility gate on the repository itself: `run_experiments.py --verify` → "VERIFY OK: 500 runs reproduce the committed trace hashes" (67 s wall, 8 processes).
+
+**Visual review (as a judge):** the hubs are readable at every step: mission boxes float clear of the labels, the
+Rankin Inlet cluster no longer swallows Arviat, Sanikiluaq sits in open water with the legend now
+bottom-left and collapsible. At 1280 px the docked card keeps its four result rows and one row of
+buttons; the map shows the populated south large. Under reduced motion the same screen is simply
+still. A scenario opened from the Research page finally reads like a sentence and says where it
+came from. The remaining rough edge is small: two parked-aircraft ids can run together under a
+hub ("0903" at Cambridge Bay) at the default zoom, and flying aircraft still cross hub labels
+(the labels now sit above them).
+
+**What still needs improvement (after the sprint):**
+1. Parked-aircraft id rows can touch at the default zoom (Cambridge Bay "09 03"); widen the slot or hide ids below a zoom threshold.
+2. Below 1280 px the sticky timeline covers the bottom of the map until the page scrolls (legend pill hidden); acceptable for a phone, not a stage layout.
+3. The "What's happening" mission rows are clickable list items without keyboard access; make them buttons.
+4. Toggling Advanced while the guided demo is open moves the card from the column to the overlay; either lock the switch during the demo or dock in Advanced too.
+5. Medical-first and Connectivity-first runs of the Kitikmeot preset are not precomputed (only Balanced is warmed), so a live profile switch on stage solves in about a second; acceptable, but say so.
+6. The presenter rehearsal (three timed run-throughs) is the one checklist item the build cannot tick.
+
+**Commit:** _pending_

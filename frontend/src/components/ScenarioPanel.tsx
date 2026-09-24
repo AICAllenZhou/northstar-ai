@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { DISRUPTION_LABEL } from '../lib/format'
+import { experimentSentence, scenarioBlurb } from '../lib/humanize'
 import { clock } from '../lib/time'
 import { selectControlsDisabled, useStore } from '../state/store'
 import { DisruptionForm } from './DisruptionForm'
@@ -27,12 +28,14 @@ export function ScenarioPanel() {
   const current = presets.find((p) => p.id === currentId)
   const disruptions = scenario?.scenario.disruptions ?? []
   const effects = new Map((scenario?.disruption_effects ?? []).map((e) => [e.id, e]))
+  const experiments = useStore((s) => s.experiments)
+  const expLine = experimentSentence(currentId, experiments)
 
   return (
     <>
       <section className="panel">
         <div className="panel-title">
-          <span className="eyebrow">Scenario</span>
+          <h2 className="eyebrow">Scenario</h2>
           <button className="btn small ghost" disabled={disabled} onClick={() => resetScenario().catch(() => undefined)} title="Healthy network, no disruptions">
             {busy === 'reset' ? <Spinner /> : 'Reset'}
           </button>
@@ -42,14 +45,15 @@ export function ScenarioPanel() {
             {!isPreset && <option value="__custom">{scenario?.scenario.name ?? 'Custom scenario'}</option>}
             {presets.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <p className="preset-desc">{current?.description ?? scenario?.scenario.description ?? 'Loading presets…'}</p>
+          <p className="preset-desc">{current?.description ?? (scenario ? scenarioBlurb(scenario.scenario.description) : 'Loading presets…')}</p>
+          {expLine && <p className="preset-desc">{expLine}</p>}
           {busy === 'load' && <Spinner label="Loading scenario…" />}
         </div>
       </section>
 
       <section className="panel">
         <div className="panel-title">
-          <span className="eyebrow">Disruptions <span className="count">{disruptions.length}</span></span>
+          <h2 className="eyebrow">Disruptions <span className="count">{disruptions.length}</span></h2>
           <button className="btn small" disabled={disabled} onClick={() => setShowForm((v) => !v)} aria-expanded={showForm}>{showForm ? 'Close' : '+ Add disruption'}</button>
         </div>
         {showForm && <DisruptionForm onDone={() => setShowForm(false)} />}

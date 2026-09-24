@@ -34,7 +34,7 @@ export function DecisionsPanel() {
   return (
     <section className="panel decisions" ref={ref}>
       <div className="panel-title">
-        <span className="eyebrow">NORTHSTAR decisions <span className="count">{decisions.length}</span></span>
+        <h2 className="eyebrow">NORTHSTAR decisions <span className="count">{decisions.length}</span></h2>
         <span className="eyebrow src">structured, no LLM</span>
       </div>
       {!ns && <div className="empty">Run <strong>NORTHSTAR AI</strong> to see each assignment, the alternatives it rejected and the trade-offs.</div>}

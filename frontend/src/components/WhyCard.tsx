@@ -121,7 +121,7 @@ export function WhyPanel() {
   return (
     <section className="panel why-panel" ref={ref}>
       <div className="panel-title">
-        <span className="eyebrow">Why this decision</span>
+        <h2 className="eyebrow">Why this decision</h2>
         <button type="button" className="btn small ghost" onClick={() => highlightDecision(d)} title="Show the chosen path on the map">Show on map</button>
       </div>
       <WhyCard decision={d} />

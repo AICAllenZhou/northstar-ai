@@ -54,7 +54,7 @@ export function MissionList() {
   return (
     <section className="panel grow">
       <div className="panel-title">
-        <span className="eyebrow">Missions <span className="count">{missions.length}</span></span>
+        <h2 className="eyebrow">Missions <span className="count">{missions.length}</span></h2>
         {run && <span className="eyebrow src">{run.strategy === 'do_nothing' ? 'do nothing' : run.strategy}</span>}
       </div>
       {missions.length === 0 && <div className="empty">No missions loaded.</div>}

@@ -1,12 +1,14 @@
 // Scenario explorer: every generated scenario, baseline → NORTHSTAR per metric,
 // sortable by clicking a metric header (worst for NORTHSTAR first), filterable by
-// the disruption mix, and each row loadable into the simulator.
+// the disruption mix, and each row loadable into the simulator. Default columns are
+// the six resilience metrics (headline five + reroutes); "All" shows the ten primary ones.
 import { useMemo, useState } from 'react'
 import type { ExperimentSummary } from '../../api/types'
 import { Spinner } from '../../components/ui'
 import { fmtMetric } from '../../lib/format'
+import { compactDescription } from '../../lib/humanize'
 import { useStore } from '../../state/store'
-import { compactDescription, HEADLINE_COLS, pairedDiffs, type PairedDiff } from './paired'
+import { pairedDiffs, RESILIENCE_COLS, type PairedDiff } from './paired'
 
 /** Loads one generated scenario into the simulator session and goes there; the run buttons then solve it live. */
 export function OpenInSimulator({ id }: { id: string }) {
@@ -34,10 +36,11 @@ export function ScenarioExplorer({ exp }: { exp: ExperimentSummary }) {
   const pid = exp.primary_policy
   const comp = exp.comparisons[pid]
   const rows = useMemo(() => exp.per_scenario[exp.primary_policy] ?? [], [exp])
-  const [cols, setCols] = useState<'headline' | 'all'>('headline')
+  const [cols, setCols] = useState<'resilience' | 'all'>('resilience')
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState<{ key: string; dir: Dir } | null>(null)
-  const keys = (cols === 'all' ? exp.primary_metrics : HEADLINE_COLS.filter((k) => exp.primary_metrics.includes(k))).filter((k) => !!comp[k])
+  const resilience = RESILIENCE_COLS.filter((k) => exp.primary_metrics.includes(k))
+  const keys = (cols === 'all' ? exp.primary_metrics : resilience).filter((k) => !!comp[k])
 
   const diffIndex = useMemo(() => {
     const c = exp.comparisons[exp.primary_policy] ?? {}
@@ -66,8 +69,8 @@ export function ScenarioExplorer({ exp }: { exp: ExperimentSummary }) {
       <div className="explorer-tools">
         <input className="input" type="search" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filter by disruption mix, e.g. 2 aircraft failures" aria-label="Filter scenarios by description" />
         <div className="seg" role="group" aria-label="Metric columns">
-          <button type="button" className={cols === 'headline' ? 'on' : ''} onClick={() => setCols('headline')}>Headline {HEADLINE_COLS.filter((k) => exp.primary_metrics.includes(k)).length}</button>
-          <button type="button" className={cols === 'all' ? 'on' : ''} onClick={() => setCols('all')}>All {exp.primary_metrics.length} metrics</button>
+          <button type="button" className={cols === 'resilience' ? 'on' : ''} onClick={() => setCols('resilience')} title="The five headline metrics plus reroutes, where NORTHSTAR loses">Resilience {resilience.length}</button>
+          <button type="button" className={cols === 'all' ? 'on' : ''} onClick={() => setCols('all')} title="Every primary metric">All {exp.primary_metrics.length}</button>
         </div>
         <span className="explorer-count mono">{shown.length} of {rows.length} scenarios{sort ? ` · sorted by ${comp[sort.key]?.label.toLowerCase()}, ${sort.dir === 'worst' ? 'worst' : 'best'} for NORTHSTAR first` : ''}</span>
       </div>

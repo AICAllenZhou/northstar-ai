@@ -140,6 +140,7 @@
 .alts-table td:first-child { white-space: nowrap; color: var(--ink); }
 .alts-table .alt-type { display: block; font-size: 10.5px; color: var(--ink-3); font-weight: 400; }
 .alts-table tr.chosen td { color: var(--ink); background: var(--ns-dim); }
+.alts-table tr.chosen .alt-type { color: var(--ink-2); }
 .alts-table .chip { font-size: 9.5px; padding: 1px 6px; }
 .chip.verdict-chosen { color: var(--ns); border-color: var(--ns); }
 .chip.verdict-failed, .chip.verdict-stranded { color: var(--ink-3); border-color: var(--line-2); }

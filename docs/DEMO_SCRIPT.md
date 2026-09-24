@@ -76,4 +76,5 @@ talking: point at what moved.
   failure*, run NORTHSTAR with **Balanced**, then switch the profile to **Medical-first** in
   Advanced mode and run again. Same scenario, same fleet, different declared priorities, a different
   recommendation. Read the two medical response times and the disconnected-community hours off
-  the ten-metric table; do not quote numbers from memory.
+  the ten-metric table; do not quote numbers from memory. [Rehearsal, Balanced: mean medical
+  response 105 min versus 60 under the baseline, disconnected-community hours 8 → 0.]

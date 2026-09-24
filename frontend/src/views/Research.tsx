@@ -6,11 +6,12 @@ import { useEffect, useMemo, type ReactNode } from 'react'
 import { EXPERIMENTS_CSV_URL } from '../api/client'
 import type { ExperimentSummary, MetricComparison, PolicyWeights, Stat } from '../api/types'
 import { fmtMetric, fmtNumber, pValue, pct } from '../lib/format'
+import { compactDescription } from '../lib/humanize'
 import { runExperimentCmd } from '../site/copy'
 import { useStore } from '../state/store'
 import { DiffStrip, SolverBar, WltBar } from './research/Charts'
 import { OpenInSimulator, ScenarioExplorer } from './research/Explorer'
-import { compactDescription, fmtDiff, median, pairedDiffs, solverBuckets, type PairedDiff } from './research/paired'
+import { fmtDiff, median, pairedDiffs, solverBuckets, type PairedDiff } from './research/paired'
 
 const QUESTION = 'Does constraint optimization make a remote air network more resilient than rule-based dispatch?'
 /** Resilience metrics the headline may pick from; the three with the largest W − L margin are shown. */
@@ -46,7 +47,7 @@ export function Research({ active }: { active: boolean }) {
       {missing && (
         <div className="wrap">
           <div className="rs-state rs-empty" role="status">
-            <h3>No experiment results on this machine yet</h3>
+            <h2>No experiment results on this machine yet</h2>
             <p>The Research page reads <code>experiments/results/summary.json</code>. Generate it (about 3–10 minutes on a laptop) from the repository root:</p>
             <pre>{runExperimentCmd()}</pre>
             <p>Then reload this page. The command is deterministic: the same seed reproduces the same CSV.</p>
@@ -57,7 +58,7 @@ export function Research({ active }: { active: boolean }) {
       {error && !missing && (
         <div className="wrap">
           <div className="rs-state rs-empty danger" role="alert">
-            <h3>Could not load the experiment summary</h3>
+            <h2>Could not load the experiment summary</h2>
             <p>{error}</p>
             <button type="button" className="btn" onClick={() => void load()}>Retry</button>
           </div>

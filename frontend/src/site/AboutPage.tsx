@@ -21,7 +21,8 @@ export function AboutPage() {
         <p className="lead">NORTHSTAR is a simulation with two dispatch strategies inside it. Conceptually, it does six things.</p>
       </header>
 
-      <section className="wrap" aria-label="How it works">
+      <section className="wrap" aria-labelledby="how-h">
+        <h2 id="how-h" className="sr-only">How it works, in six steps</h2>
         <ol className="steps">
           {STEPS.map((s) => <li key={s.t}><h3>{s.t}</h3><p>{s.p}</p></li>)}
         </ol>

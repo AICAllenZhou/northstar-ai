@@ -31,7 +31,7 @@ export function StatusTiles({ simple = false }: { simple?: boolean }) {
     return (
       <section className={`tiles simple ${four ? 'n4' : 'n3'}`} aria-label="Network status">
         <div className="tiles-head">
-          <span className="eyebrow">Network at {clock(t)}</span>
+          <h2 className="eyebrow">Network at {clock(t)}</h2>
           <span className="eyebrow src">{src}</span>
         </div>
         <div className="tile-grid">
@@ -47,7 +47,7 @@ export function StatusTiles({ simple = false }: { simple?: boolean }) {
   return (
     <section className="tiles" aria-label="Network status">
       <div className="tiles-head">
-        <span className="eyebrow">Network at {clock(t)}</span>
+        <h2 className="eyebrow">Network at {clock(t)}</h2>
         <span className="eyebrow src">{src}</span>
       </div>
       <div className="tile-grid">

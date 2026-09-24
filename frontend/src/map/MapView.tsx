@@ -9,7 +9,7 @@ import { MapLegend } from './MapLegend'
 import { createFlowController, type FlowController } from './flow'
 import { addOverlayLayers, updateOverlays, updateTrails } from './layers'
 import {
-  createAircraftMarker, createLabelMarker, createMissionMarker, declutterLabels, setAircraftState, setMissionState,
+  createAircraftMarker, createLabelMarker, createMissionMarker, declutterLabels, setAircraftState, setMissionSlot, setMissionState,
   type AircraftMarker, type LabelMarker, type MissionMarker,
 } from './markers'
 import { buildStyle } from './style'
@@ -27,6 +27,10 @@ export function MapView() {
   const labelsRef = useRef<LabelMarker[]>([])
   const aircraftRef = useRef<globalThis.Map<string, AircraftMarker>>(new globalThis.Map())
   const missionsRef = useRef<globalThis.Map<string, MissionMarker>>(new globalThis.Map())
+  // What sits next to each airport dot (mission boxes, parked aircraft), so the label declutter keeps clear of it;
+  // effect 3 maintains the counts and asks effect 2's declutter to run again whenever they change.
+  const obstaclesRef = useRef<{ missions: globalThis.Map<string, number>; parked: globalThis.Map<string, number> }>({ missions: new globalThis.Map(), parked: new globalThis.Map() })
+  const declutterRef = useRef<() => void>(() => undefined)
   const [loaded, setLoaded] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const network = useStore((s) => s.network)
@@ -97,7 +101,8 @@ export function MapView() {
 
     const labels = network.airports.map((a) => createLabelMarker(map, a))
     labelsRef.current = labels
-    const declutter = () => declutterLabels(map, labels, map.getZoom())
+    const declutter = () => declutterLabels(map, labels, map.getZoom(), obstaclesRef.current)
+    declutterRef.current = declutter
     declutter()
     map.on('moveend', declutter)
     map.on('zoom', declutter)
@@ -109,6 +114,7 @@ export function MapView() {
       aircraftMarkers.set(ac.id, createAircraftMarker(map, ac, [home?.lon ?? 0, home?.lat ?? 0], (id) => select({ kind: 'aircraft', id })))
     }
     return () => {
+      declutterRef.current = () => undefined
       map.off('moveend', declutter)
       map.off('zoom', declutter)
       labels.forEach((l) => l.marker.remove())
@@ -129,18 +135,33 @@ export function MapView() {
     const aircraftMarkers = aircraftRef.current
     const flow = flowRef.current
 
+    const obstacles = obstaclesRef.current
+    const signature = (m: globalThis.Map<string, number>) => [...m].sort().map(([k, v]) => `${k}:${v}`).join(',')
+
     const syncMissions = () => {
       const s = useStore.getState()
       const wanted = new Set<string>()
+      let changed = false
       for (const m of s.scenario?.missions ?? []) {
         if (m.type === 'passenger') continue
         wanted.add(m.id)
         if (!missionMarkers.has(m.id)) {
-          const at = apt.get(m.type === 'medical' ? m.origin : m.dest)
-          if (at) missionMarkers.set(m.id, createMissionMarker(map, m, [at.lon, at.lat], (id) => select({ kind: 'mission', id })))
+          const airportId = m.type === 'medical' ? m.origin : m.dest
+          const at = apt.get(airportId)
+          if (at) { missionMarkers.set(m.id, createMissionMarker(map, m, airportId, [at.lon, at.lat], (id) => select({ kind: 'mission', id }))); changed = true }
         }
       }
-      for (const [id, mm] of missionMarkers) if (!wanted.has(id)) { mm.marker.remove(); missionMarkers.delete(id) }
+      for (const [id, mm] of missionMarkers) if (!wanted.has(id)) { mm.marker.remove(); missionMarkers.delete(id); changed = true }
+      if (!changed) return
+      // Missions that share an airport fan out leftwards in id order; the label declutter reserves the same boxes.
+      const perAirport = new globalThis.Map<string, MissionMarker[]>()
+      for (const mm of missionMarkers.values()) perAirport.set(mm.airportId, [...(perAirport.get(mm.airportId) ?? []), mm])
+      obstacles.missions.clear()
+      for (const [airportId, list] of perAirport) {
+        list.sort((a, b) => a.id.localeCompare(b.id)).forEach((mm, i) => setMissionSlot(mm, i))
+        obstacles.missions.set(airportId, list.length)
+      }
+      declutterRef.current()
     }
 
     const updateSlow = () => {
@@ -179,6 +200,7 @@ export function MapView() {
       // airport dot (labels sit to the right, mission icons up-left).
       const parked = new globalThis.Map<string, number>()
       for (const p of positions) if (p.status !== 'flying' && p.airportId) parked.set(p.airportId, (parked.get(p.airportId) ?? 0) + 1)
+      if (signature(parked) !== signature(obstacles.parked)) { obstacles.parked = parked; declutterRef.current() }
       const slot = new globalThis.Map<string, number>()
       for (const p of positions) {
         const m = aircraftMarkers.get(p.id)
@@ -209,6 +231,8 @@ export function MapView() {
       flow?.setActive(false)
       missionMarkers.forEach((m) => m.marker.remove())
       missionMarkers.clear()
+      obstacles.missions.clear()
+      obstacles.parked = new globalThis.Map()
     }
   }, [loaded, network])
 
@@ -217,8 +241,11 @@ export function MapView() {
       <div ref={containerRef} className="map" />
       {mapError && <div className="map-error">{mapError}</div>}
       {!network && !mapError && <div className="map-error muted">Waiting for the network…</div>}
-      <InfoPanel />
-      <MapLegend />
+      {/* Bottom-left corner: the legend (collapsible) stacked above the info panel, so neither covers the other. */}
+      <div className="map-corner">
+        <MapLegend />
+        <InfoPanel />
+      </div>
     </div>
   )
 }

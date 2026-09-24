@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Mission } from '../api/types'
-import { describeDisruption, describeMission, firstSentence, MISSION_TYPES, presetTitle } from '../lib/humanize'
+import { describeDisruption, describeMission, experimentSentence, firstSentence, generatedScenario, MISSION_TYPES, presetTitle, scenarioBlurb } from '../lib/humanize'
 import { reasonText } from '../lib/format'
 import { clock } from '../lib/time'
 import { selectControlsDisabled, selectDisplayedRun, selectHasDisruptions, useStore } from '../state/store'
@@ -19,11 +19,20 @@ export function ScenarioSimple() {
   const sc = scenario?.scenario
   const preset = presets.find((p) => p.id === sc?.id)
   const showCards = !hasDisruptions || changing
+  // A generated experiment scenario (opened from the Research page) says which row of the experiment it is;
+  // that needs the summary, which the Research page may not have loaded yet in this session.
+  const generated = !!generatedScenario(sc?.id)
+  const experiments = useStore((s) => s.experiments)
+  const experimentsMissing = useStore((s) => s.experimentsMissing)
+  const experimentsError = useStore((s) => s.experimentsError)
+  const loadExperiments = useStore((s) => s.loadExperiments)
+  useEffect(() => { if (generated && !experiments && !experimentsMissing && !experimentsError) void loadExperiments() }, [generated, experiments, experimentsMissing, experimentsError, loadExperiments])
+  const expLine = experimentSentence(sc?.id, experiments)
 
   return (
     <section className="panel scenario-simple">
       <div className="panel-title">
-        <span className="eyebrow">Scenario</span>
+        <h2 className="eyebrow">Scenario</h2>
         {hasDisruptions && (
           <span className="panel-tools">
             {changing ? <button type="button" className="link" onClick={() => setChanging(false)}>Keep current</button>
@@ -35,7 +44,8 @@ export function ScenarioSimple() {
       {!showCards && sc && (
         <div className="scenario-card">
           <h3>{preset ? presetTitle(preset) : sc.name}</h3>
-          <p>{firstSentence(sc.description || preset?.description || '')}</p>
+          <p>{preset ? firstSentence(sc.description || preset.description) : scenarioBlurb(sc.description)}</p>
+          {expLine && <p>{expLine}</p>}
           {busy === 'load' && <Spinner label="Loading scenario…" />}
         </div>
       )}
@@ -103,7 +113,7 @@ export function Happening() {
   return (
     <section className="panel grow happening">
       <div className="panel-title">
-        <span className="eyebrow">What’s happening</span>
+        <h2 className="eyebrow">What’s happening</h2>
         {run && <span className="eyebrow src">{run.strategy === 'do_nothing' ? 'do nothing' : run.strategy === 'northstar' ? 'NORTHSTAR' : 'baseline'} · {clock(t)}</span>}
       </div>
       {empty && <div className="empty">Nothing yet: the schedule flies as published.</div>}

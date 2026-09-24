@@ -2,7 +2,7 @@
 // decisions. Every fact comes from the API (network, scenario, runs, compare);
 // nothing here invents a number or a place name.
 import type {
-  Airport, CompareResponse, DecisionReason, DecisionRecord, Disruption, DisruptionEffect, Metrics, Mission,
+  Airport, CompareResponse, DecisionReason, DecisionRecord, Disruption, DisruptionEffect, ExperimentSummary, Metrics, Mission,
   NetworkResponse, Preset, ScenarioState,
 } from '../api/types'
 import { haversineKm } from '../map/geo'
@@ -27,6 +27,50 @@ export function firstSentence(s: string): string {
 
 export type Complexity = 'Low' | 'Medium' | 'High'
 export const complexity = (n: number): Complexity => (n <= 3 ? 'Low' : n <= 5 ? 'Medium' : 'High')
+
+// ---- generated experiment scenarios ----------------------------------------
+
+const COUNT_WORDS: Record<string, [string, string]> = {
+  'closure(s)': ['closure', 'closures'],
+  'weather event(s)': ['weather event', 'weather events'],
+  'aircraft failure(s)': ['aircraft failure', 'aircraft failures'],
+  'medevac(s)': ['medevac', 'medevacs'],
+  'cargo request(s)': ['cargo request', 'cargo requests'],
+}
+
+/** The generator's count list, "3 closure(s), 0 weather event(s), 1 medevac(s)" → "3 closures · 1 medevac" (zero counts dropped). */
+export function compactDescription(desc: string): string {
+  const parts = desc.split(', ').map((part) => {
+    const m = part.match(/^(\d+) (.+)$/)
+    if (!m) return part
+    const n = Number(m[1]), w = COUNT_WORDS[m[2]]
+    if (!w) return part
+    return n === 0 ? '' : `${n} ${n === 1 ? w[0] : w[1]}`
+  }).filter(Boolean)
+  return parts.length ? parts.join(' · ') : desc
+}
+
+/** One line for a scenario card: the generator's count list is compacted, any other description keeps its first sentence. */
+export function scenarioBlurb(description: string): string {
+  return /\(s\)/.test(description) ? compactDescription(description) : firstSentence(description)
+}
+
+const GEN_ID = /^gen-(\d+)-(\d+)$/
+/** "gen-42-017" → { seed: 42, index: 17 } (the number the backend also puts in "Generated scenario 17"); null for presets and hand-built scenarios. */
+export function generatedScenario(id: string | null | undefined): { seed: number; index: number } | null {
+  const m = id?.match(GEN_ID)
+  return m ? { seed: Number(m[1]), index: Number(m[2]) } : null
+}
+
+/** "Scenario 17 of the 100-scenario experiment (seed 42); the run buttons solve it live." Null unless the id is a
+ *  row of the loaded experiment summary (so n, N and the seed all come from the same committed run). */
+export function experimentSentence(id: string | null | undefined, exp: ExperimentSummary | null): string | null {
+  const g = generatedScenario(id)
+  if (!g || !exp) return null
+  const rows = exp.per_scenario[exp.primary_policy] ?? []
+  if (!rows.some((r) => r.scenario_id === id)) return null
+  return `Scenario ${g.index} of the ${fmtNumber(exp.n_scenarios)}-scenario experiment (seed ${exp.seed}); the run buttons solve it live.`
+}
 
 // ---- small formatting ------------------------------------------------------
 

@@ -17,7 +17,7 @@
 
   --ink: #e9f1f8;
   --ink-2: #a4b4c4;
-  --ink-3: #6c7d8e;
+  --ink-3: #7a8b9c;   /* muted captions: ≥ 4.5:1 on bg-0 / bg-1 / bg-2 (5.6 / 5.2 / 4.8) */
 
   --ns: #2ee6d6;      /* NORTHSTAR accent (buttons, badges) */
   --ns-2: #1fc2b4;    /* NORTHSTAR chart / map mark */

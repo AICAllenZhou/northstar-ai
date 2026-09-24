@@ -1,6 +1,7 @@
 // Pure helpers for the Research page (no components, so Fast Refresh stays happy):
-// paired differences per scenario, tie tolerance, median, signed formatting,
-// the solver bucket accounting and the compact disruption description.
+// paired differences per scenario, tie tolerance, median, signed formatting and
+// the solver bucket accounting. (The compact disruption description lives in
+// lib/humanize so the command centre can use it too.)
 import type { MetricComparison, PerScenarioRow, SolverStats } from '../../api/types'
 import { fmtMetric } from '../../lib/format'
 import { duration } from '../../lib/time'
@@ -81,25 +82,6 @@ export function solverBuckets(so: SolverStats): Buckets {
   }
 }
 
-/** The five metrics the explorer shows by default; "All" adds the rest of the primary list. */
-export const HEADLINE_COLS = ['disconnected_community_hours', 'passenger_delay_avg_min', 'medical_response_avg_min', 'cargo_delay_avg_min', 'cancelled_flights']
-
-const WORDS: Record<string, [string, string]> = {
-  'closure(s)': ['closure', 'closures'],
-  'weather event(s)': ['weather event', 'weather events'],
-  'aircraft failure(s)': ['aircraft failure', 'aircraft failures'],
-  'medevac(s)': ['medevac', 'medevacs'],
-  'cargo request(s)': ['cargo request', 'cargo requests'],
-}
-
-/** "3 closure(s), 0 weather event(s), 1 medevac(s)" → "3 closures · 1 medevac" (zero counts dropped). */
-export function compactDescription(desc: string): string {
-  const parts = desc.split(', ').map((part) => {
-    const m = part.match(/^(\d+) (.+)$/)
-    if (!m) return part
-    const n = Number(m[1]), w = WORDS[m[2]]
-    if (!w) return part
-    return n === 0 ? '' : `${n} ${n === 1 ? w[0] : w[1]}`
-  }).filter(Boolean)
-  return parts.length ? parts.join(' · ') : desc
-}
+/** The six resilience metrics the explorer shows by default: the five headline ones plus reroutes / reassignments,
+ *  the column where NORTHSTAR loses. "All" adds the rest of the primary list. */
+export const RESILIENCE_COLS = ['disconnected_community_hours', 'passenger_delay_avg_min', 'medical_response_avg_min', 'cargo_delay_avg_min', 'cancelled_flights', 'reroutes']
