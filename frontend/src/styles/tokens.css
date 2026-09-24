@@ -1,0 +1,55 @@
+/* NORTHSTAR AI design tokens.
+   Dark polar-night ground, high contrast, one saturated accent (NORTHSTAR teal).
+   Semantic colours are fixed across the whole app and the map:
+     medical = pink-red, cargo = amber, passenger = blue, NORTHSTAR = teal,
+     baseline = neutral grey, closed/danger = red, disconnected = amber. */
+:root {
+  color-scheme: dark;
+
+  --bg-0: #0a0f15;   /* page ground */
+  --bg-1: #10171f;   /* panels */
+  --bg-2: #161f29;   /* raised rows, inputs */
+  --bg-3: #1d2834;   /* hover */
+  --line: #233040;
+  --line-2: #31404f;
+
+  --ink: #eef3f8;
+  --ink-2: #a9b6c4;
+  --ink-3: #6f8090;
+
+  --ns: #2ee6d6;      /* NORTHSTAR accent (buttons, badges) */
+  --ns-2: #1fc2b4;    /* NORTHSTAR chart / map mark */
+  --ns-dim: rgba(46, 230, 214, 0.14);
+  --ns-ink: #04201d;  /* text on the teal button */
+
+  --base: #8a98a8;    /* baseline grey */
+  --base-2: #b9c4d0;
+  --base-dim: rgba(138, 152, 168, 0.16);
+
+  --med: #ff5fa2;
+  --cargo: #f5a623;
+  --pax: #4c9aff;
+  --combi: #b69cff;
+  --util: #c3cdd8;
+
+  --danger: #ff4747;
+  --danger-dim: rgba(255, 71, 71, 0.16);
+  --warn: #ffb020;
+  --warn-dim: rgba(255, 176, 32, 0.16);
+  --good: #3ddc84;
+  --good-dim: rgba(61, 220, 132, 0.16);
+  --loss: #d9734f;    /* "baseline won" in charts */
+
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --r-1: 4px;
+  --r-2: 8px;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  --header-h: 58px;
+  --disclaimer-h: 28px;
+  --timeline-h: 72px;
+  --left-w: 300px;
+  --right-w: 400px;
+}

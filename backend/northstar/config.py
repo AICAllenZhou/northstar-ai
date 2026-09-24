@@ -20,6 +20,9 @@ WILDFIRE_CLOSE_SEVERITY = 0.5
 WEATHER_CLOSE_SEVERITY = 0.8
 SOLVER_TIME_LIMIT_S = 10.0
 SOLVER_SEED = 42
+SOLVER_LOOKAHEAD_MIN = 240  # missions released within this window enter each CP-SAT model (plus every medical/cargo mission)
+SOLVER_WORKERS_EXPERIMENT = 1  # single worker: reproducible
+SOLVER_WORKERS_API = 8  # interactive runs: faster; identical plan whenever the solver proves optimality (always recorded)
 RANGE_RESERVE_FACTOR = 1.0  # usable range = range_km * factor
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

@@ -159,7 +159,7 @@ def write_markdown(summary: dict, path: Path) -> None:
     comp = summary["comparisons"][pid]
     lines = [f"# NORTHSTAR AI — Experiment summary", "",
              f"Generated {summary['generated_utc']} · {summary['n_scenarios']} paired scenarios · master seed {summary['seed']} · "
-             f"policy `{pid}` · commit `{summary.get('git_commit')}` · OR-Tools {summary.get('ortools_version')}", "",
+             f"policy `{pid}` · commit `{summary.get('git_commit')}`{' (uncommitted changes present)' if summary.get('git_dirty') else ''} · OR-Tools {summary.get('ortools_version')}", "",
              "Every scenario was run once with the rule-based baseline and once with NORTHSTAR from identical initial states, "
              "through the same simulator and the same metrics function. Unserved missions are censored at the horizon end (24 h) "
              "for both strategies. See `docs/DATA_AND_EXPERIMENT_METHODOLOGY.md`.", "",
@@ -211,6 +211,14 @@ def _git_commit() -> str | None:
         return None
 
 
+def _git_dirty() -> bool | None:
+    try:
+        out = subprocess.check_output(["git", "status", "--porcelain", "--", "backend", "datasets", "experiments/run_experiments.py"], cwd=REPO, text=True)
+        return bool(out.strip())
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def run_experiment(n: int, seed: int, policies: list[str], out_dir: Path | None, progress=None, workers: int | None = None, network=None) -> dict:
     import ortools
     out_dir = Path(out_dir) if out_dir else None
@@ -229,7 +237,7 @@ def run_experiment(n: int, seed: int, policies: list[str], out_dir: Path | None,
             scenarios.append(sc); rows.extend(rs)
             if progress:
                 progress(i)
-    meta = {"git_commit": _git_commit(), "python": platform.python_version(), "ortools_version": ortools.__version__,
+    meta = {"git_commit": _git_commit(), "git_dirty": _git_dirty(), "python": platform.python_version(), "ortools_version": ortools.__version__,
             "platform": platform.platform(), "horizon_min": scenarios[0]["horizon_min"] if scenarios else None,
             "policy_weights": {p: POLICIES[p].model_dump(exclude={"id", "name", "description"}) for p in policies}}
     summary = summarize(rows, scenarios, seed, policies, meta)

@@ -29,7 +29,7 @@ import time
 
 from ortools.sat.python import cp_model
 
-from northstar.config import SOLVER_SEED, SOLVER_TIME_LIMIT_S, TURNAROUND_MIN, Policy, get_policy
+from northstar.config import SOLVER_LOOKAHEAD_MIN, SOLVER_SEED, SOLVER_TIME_LIMIT_S, TURNAROUND_MIN, Policy, get_policy
 from northstar.models import Assignment, MissionType, Plan
 from northstar.sim.state import StrategyView
 from northstar.strategies.base import Candidate, Infeasible, restate_queues, transition
@@ -41,7 +41,7 @@ class NorthstarStrategy:
     name = "northstar"
 
     def __init__(self, policy: Policy | None = None, time_limit_s: float = SOLVER_TIME_LIMIT_S,
-                 lookahead_min: int = 360, workers: int = 1, seed: int = SOLVER_SEED) -> None:
+                 lookahead_min: int = SOLVER_LOOKAHEAD_MIN, workers: int = 1, seed: int = SOLVER_SEED) -> None:
         self.policy = policy or get_policy("balanced")
         self.time_limit_s = time_limit_s
         self.lookahead_min = lookahead_min
@@ -227,7 +227,8 @@ class NorthstarStrategy:
         wall_ms = int((time.perf_counter() - t0) * 1000)
         name = solver.StatusName(status)
         info = {"status": name, "wall_ms": wall_ms, "objective": solver.ObjectiveValue() if status in (cp_model.OPTIMAL, cp_model.FEASIBLE) else None,
-                "n_missions": len(mids), "n_aircraft": len(aircraft), "n_pairs": len(x), "policy": pol.id}
+                "n_missions": len(mids), "n_aircraft": len(aircraft), "n_pairs": len(x), "policy": pol.id,
+                "workers": self.workers, "lookahead_min": self.lookahead_min}
         if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             plan_status = "NO_FEASIBLE_SOLUTION" if status == cp_model.INFEASIBLE else "TIMEOUT"
             self.contexts.append({"t": t, "status": plan_status, "missions": mids, "aircraft": aircraft,

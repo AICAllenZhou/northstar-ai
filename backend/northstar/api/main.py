@@ -306,6 +306,9 @@ def experiments_run(req: ExperimentRequest):
 
     def work():
         try:
+            import sys
+            if str(REPO_ROOT) not in sys.path:
+                sys.path.insert(0, str(REPO_ROOT))
             from experiments.run_experiments import run_experiment  # type: ignore
             summary = run_experiment(n=req.n, seed=req.seed, policies=[req.policy_id], out_dir=None,
                                      progress=lambda i: job.__setitem__("done", i), workers=1, network=s.network)

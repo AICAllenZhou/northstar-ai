@@ -17,7 +17,7 @@ from northstar.models import (
 )
 from northstar.sim.disruptions import apply_end, apply_start, generate_missions, ground_failure, recompute_routes
 from northstar.sim.state import SimulationState, StrategyView
-from northstar.strategies.base import Candidate, Infeasible, build_candidate, hop_minutes
+from northstar.strategies.base import Infeasible, build_candidate, hop_minutes, transition
 
 REPLAN_EVENTS = {
     "MISSION_KNOWN", "MISSION_RELEASED", "DISRUPTION_START", "DISRUPTION_END", "AIRCRAFT_FAILED", "AIRCRAFT_FREE",
@@ -87,20 +87,35 @@ def _apply_plan(st: SimulationState, plan: Plan, t: int, triggers: list[str]) ->
     by_aircraft: dict[str, list[Assignment]] = {a: [] for a in st.aircraft}
     rejected = 0
     seen: set[str] = set()
+    chain_pos: dict[str, tuple[str, int]] = {}  # aircraft -> (airport, time) after its last accepted queued mission
     for asg in plan.assignments:
         if asg.mission_id in seen:
             continue
         ms = st.missions.get(asg.mission_id)
         if ms is None or ms.status in ("completed", "unserved") or ms.departed:
             continue
-        # defence in depth: every assignment is re-validated with the shared helper
-        c = build_candidate(st, t, asg.aircraft_id, asg.mission_id)
+        # defence in depth: every assignment is re-validated with the shared helper, from where the
+        # aircraft will be after the missions queued before it (its current location for the first one)
+        ast = st.aircraft.get(asg.aircraft_id)
+        if ast is None:
+            rejected += 1
+            st.event("REJECTED_ASSIGNMENT", mission_id=asg.mission_id, aircraft_id=asg.aircraft_id, reason="UNKNOWN_AIRCRAFT")
+            continue
+        if asg.aircraft_id in chain_pos:
+            from_apt, avail = chain_pos[asg.aircraft_id]
+        elif ast.active_mission:
+            am = st.missions[ast.active_mission]
+            from_apt, avail = (am.dest or ast.location()), max(ast.free_at, t)
+        else:
+            from_apt, avail = None, None
+        c = build_candidate(st, t, asg.aircraft_id, asg.mission_id, from_airport=from_apt, avail_at=avail)
         if isinstance(c, Infeasible):
             rejected += 1
             st.event("REJECTED_ASSIGNMENT", mission_id=asg.mission_id, aircraft_id=asg.aircraft_id, reason=c.code)
             continue
         seen.add(asg.mission_id)
         by_aircraft.setdefault(asg.aircraft_id, []).append(asg)
+        chain_pos[asg.aircraft_id] = (c.dest, c.est_complete + TURNAROUND_MIN)
     if rejected:
         st.warnings.append(f"t={t}: {rejected} assignment(s) rejected by feasibility validation")
     # rebuild queues; anything queued (undeparted) that is not in the plan returns to pending
@@ -177,8 +192,6 @@ def _depart_ready(st: SimulationState, t: int) -> None:
                 continue  # pre-positioned, waiting for release
             if leg.to_airport in st.closed_airports or not st.open_graph().has_edge(leg.from_airport, leg.to_airport):
                 target = ms.dest if (ms.response_min is not None and leg.purpose == "mission") else ms.origin
-                tr = None
-                from northstar.strategies.base import transition
                 tr = transition(st, aid, ast.airport_id, target)  # type: ignore[arg-type]
                 if tr is None:
                     _return_mission(st, ast, mid, "route closed en route")

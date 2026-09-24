@@ -123,3 +123,14 @@ def test_northstar_flies_the_schedule_on_a_healthy_day(network):
     b = evaluate(run(network, sc, BaselineStrategy()), network)
     assert n.cancelled_flights == 0 and n.passenger_delay_avg_min == 0 and n.reroutes == 0
     assert n.distance_flown_km == b.distance_flown_km
+
+
+def test_generated_scenarios_never_produce_rejected_assignments(network):
+    """The optimizer's view and the simulator's feasibility check must agree (defence in depth never fires)."""
+    from northstar.scenarios.generator import generate_scenario
+    for i in range(8):
+        sc = generate_scenario(network, 7, i)
+        for strat in (BaselineStrategy(), NorthstarStrategy()):
+            trace = run(network, sc, strat)
+            rejected = [e for e in trace.events if e["type"] == "REJECTED_ASSIGNMENT"]
+            assert not rejected, (sc.id, strat.name, rejected[:3])

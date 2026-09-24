@@ -5,7 +5,7 @@ import threading
 import uuid
 from pathlib import Path
 
-from northstar.config import HORIZON_MIN, POLICIES, Policy, get_policy
+from northstar.config import SOLVER_WORKERS_API, Policy, get_policy
 from northstar.data.loader import load_network
 from northstar.explain.explain import explain
 from northstar.metrics.evaluate import evaluate
@@ -86,9 +86,20 @@ class Session:
         elif name == "northstar":
             pol = get_policy(policy_id or self.policy_id)
             if weights:
-                pol = pol.model_copy(update={k: v for k, v in weights.items() if hasattr(Policy, k) or k in Policy.model_fields})
+                clean = {}
+                for k, v in weights.items():
+                    if k not in Policy.model_fields or k in ("id", "name", "description"):
+                        continue
+                    if isinstance(v, dict):
+                        current = getattr(pol, k)
+                        cast = {(int(kk) if isinstance(next(iter(current)), int) else str(kk)): float(vv) for kk, vv in v.items()}
+                        clean[k] = {**current, **cast}
+                    else:
+                        clean[k] = float(v)
+                pol = pol.model_copy(update={**clean, "id": "custom", "name": "Custom weights",
+                                             "description": f"Based on {pol.name} with overrides: {sorted(clean)}"})
             self.policy_id = pol.id
-            strat = NorthstarStrategy(policy=pol)
+            strat = NorthstarStrategy(policy=pol, workers=SOLVER_WORKERS_API)
         else:
             raise KeyError(name)
         trace = run(self.network, self.scenario, strat)

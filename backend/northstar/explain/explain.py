@@ -47,8 +47,9 @@ def explain(network: Network, northstar_trace: Trace, baseline_trace: Trace | No
     # which aircraft did the baseline use for each mission
     for mid in sorted(n_out, key=lambda k: (0 if n_out[k].type == MissionType.medical else 1 if n_out[k].type == MissionType.cargo else 2, k)):
         o = n_out[mid]
-        important = o.type != MissionType.passenger or (o.status == "completed" and o.aircraft_id != o.scheduled_aircraft_id) \
-            or (o.status != "completed")
+        rerouted = o.status == "completed" and (o.aircraft_id != o.scheduled_aircraft_id
+                                                 or (o.scheduled_path is not None and o.path != o.scheduled_path))
+        important = o.type != MissionType.passenger or rerouted or o.status != "completed"
         if not important:
             continue
         ctx = _context_for(contexts, mid, o.aircraft_id)
@@ -72,16 +73,25 @@ def explain(network: Network, northstar_trace: Trace, baseline_trace: Trace | No
             chosen = cands.get(o.aircraft_id)
             ac = network.aircraft[o.aircraft_id]
             if chosen:
-                ranked = sorted(cands.items(), key=lambda kv: (kv[1]["est_response"], kv[1]["repos_min"], kv[0]))
+                key = "est_response" if o.type == MissionType.medical else "est_complete"
+                what = "response" if o.type == MissionType.medical else "completion"
+                ranked = sorted(cands.items(), key=lambda kv: (kv[1][key], kv[1]["repos_min"], kv[0]))
                 rank = [a for a, _ in ranked].index(o.aircraft_id) + 1
                 nearest_id = ranked[0][0]
                 if rank == 1:
-                    rec["reasons"].append({"code": "NEAREST_RANK", "text": "Earliest-responding compatible aircraft available",
-                                           "data": {"rank": 1, "est_response_min": chosen["est_response"] - o.release_min}})
+                    rec["reasons"].append({"code": "NEAREST_RANK", "text": f"Earliest-{what} compatible aircraft available",
+                                           "data": {"rank": 1, "est_min": chosen[key] - o.release_min, "what": what}})
                 else:
                     why = _why_not(ctx, nearest_id, mid, n_out)
-                    rec["reasons"].append({"code": "NEAREST_RANK", "data": {"rank": rank, "nearest_id": nearest_id},
-                                           "text": f"Ranked #{rank} by response time; the earliest option ({nearest_id}) was {why}"})
+                    rec["reasons"].append({"code": "NEAREST_RANK", "data": {"rank": rank, "nearest_id": nearest_id, "what": what},
+                                           "text": f"Ranked #{rank} by {what} time; the earliest option ({nearest_id}) was {why}"})
+                if o.type == MissionType.passenger and rerouted:
+                    if o.aircraft_id != o.scheduled_aircraft_id:
+                        rec["reasons"].append({"code": "REASSIGNED", "data": {"scheduled_aircraft_id": o.scheduled_aircraft_id},
+                                               "text": f"Scheduled aircraft {o.scheduled_aircraft_id} replaced by {o.aircraft_id}"})
+                    if o.scheduled_path is not None and o.path != o.scheduled_path:
+                        rec["reasons"].append({"code": "PATH_CHANGED", "data": {"scheduled_path": o.scheduled_path},
+                                               "text": "Flown on a different path than scheduled (closure or alternate hub)"})
                 rec["reasons"].append({"code": "RUNWAY_OK", "text": f"{ac.type} can use the {network.airports[chosen['dest']].runway_length_m} m "
                                                                      f"{network.airports[chosen['dest']].runway_surface} runway at {network.airports[chosen['dest']].community_name}",
                                        "data": {"min_runway_m": ac.min_runway_length_m}})
@@ -108,7 +118,8 @@ def explain(network: Network, northstar_trace: Trace, baseline_trace: Trace | No
                     c = cands[aid]
                     used_for = ctx["chosen_by_aircraft"].get(aid)
                     verdict = "busy" if used_for and used_for != mid else "worse"
-                    txt = f"{aid} ({network.aircraft[aid].type}): feasible, response {_fmt_min(c['est_response'] - o.release_min)}"
+                    k2 = "est_response" if o.type == MissionType.medical else "est_complete"
+                    txt = f"{aid} ({network.aircraft[aid].type}): feasible, {'response' if o.type == MissionType.medical else 'completion'} {_fmt_min(c[k2] - o.release_min)} after request"
                     if verdict == "busy":
                         txt += f"; assigned to {used_for} instead"
                     rec["alternatives"].append({"aircraft_id": aid, "verdict": verdict, "reason_code": None, "text": txt,
@@ -200,7 +211,12 @@ def _summary(network: Network, rec: dict) -> str:
     parts = [f"{ac} ({rec['aircraft_type']}) was selected for {rec['mission_id']}"]
     rk = next((x for x in rec["reasons"] if x["code"] == "NEAREST_RANK"), None)
     if rk:
-        parts.append("because it was the " + ("earliest-responding compatible aircraft" if rk["data"].get("rank") == 1 else rk["text"][0].lower() + rk["text"][1:]))
+        what = rk["data"].get("what", "response")
+        if rk["data"].get("rank") == 1:
+            parts.append(f"because it was the earliest-{what} compatible aircraft")
+        else:
+            parts.append(f"because although it ranked #{rk['data']['rank']} by {what} time, the earliest option ({rk['data']['nearest_id']}) was "
+                         + rk["text"].split(") was ", 1)[1])
     vb = rec.get("vs_baseline")
     if vb and vb.get("delta_min") is not None and vb["delta_min"] != 0:
         what = "medical response" if rec["mission_type"] == "medical" else "completion"

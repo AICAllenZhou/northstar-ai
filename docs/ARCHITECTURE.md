@@ -170,10 +170,18 @@ option (least total time) with reposition and mission legs, or the first
 failing reason code. Both strategies and the simulator call this function.
 
 ### 7.2 Baseline
-Per `plan()` call: missions sorted by (priority, release_min, id); for each,
-candidates among aircraft that are free now (on ground, empty queue); choose
-minimal reposition time, tie by aircraft id; assign; else leave pending. Never
-modifies an existing queue.
+Per `plan()` call, for released missions sorted by (type priority, priority,
+release_min, id):
+- scheduled passenger flight → its scheduled aircraft if free now; if that
+  aircraft is failed or stranded, the nearest free compatible aircraft;
+  otherwise wait (delay, not reassignment);
+- medical or cargo → nearest free compatible aircraft (minimal repositioning
+  time, tie by id);
+- shortest open path by distance; if nothing qualifies, stay queued.
+Never modifies an existing queue. (Version 1 reassigned scheduled flights to
+any free aircraft as soon as they were released, which produced worse
+passenger metrics than the published schedule alone, so it was replaced
+before any experiment result was recorded.)
 
 ### 7.3 NORTHSTAR (CP-SAT)
 Per `plan()` call at time t₀ (all times in steps):
@@ -228,7 +236,17 @@ whole schedule rather than cancelling flights to save fuel (an earlier weight
 of 2.0 per km did exactly that, which is why it was changed before any
 experiment was run).
 
-Solver: `num_workers = 1`, `random_seed = 42`, `max_time_in_seconds = 10`.
+Model size is bounded by a **lookahead window**: every medical and cargo
+mission plus every scheduled flight released within the next 240 minutes
+enters the model; later flights enter as the window advances. (Measured on
+the presets: identical metrics to a 360-minute window, four times faster.)
+Between events that change no information the strategy returns `UNCHANGED`
+and the simulator keeps the current queues.
+
+Solver: `random_seed = 42`, `max_time_in_seconds = 10`; `num_workers = 1`
+for experiments (reproducible) and 8 for interactive API runs (faster; the
+plan is identical whenever optimality is proven, and the status of every
+call is recorded).
 Status mapping: OPTIMAL/FEASIBLE → plan; INFEASIBLE or no solution →
 `NO_FEASIBLE_SOLUTION`; time limit without solution → `TIMEOUT`. If no
 mission has any feasible (a, m) pair the call returns `NO_FEASIBLE_SOLUTION`

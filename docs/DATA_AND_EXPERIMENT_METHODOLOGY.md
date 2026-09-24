@@ -156,26 +156,32 @@ mission is, and it is applied identically to both strategies.
 ## 5. Strategies
 
 ### 5.1 Baseline (rule-based, non-AI)
-On every replanning call, for each pending mission in priority order
-(medical < cargo < passenger; ties by release time then id):
-1. list aircraft that are available now, not failed, on the ground, with
-   enough capacity and range, and runway-compatible with the mission's
-   origin and destination and with the shortest open path;
-2. choose the aircraft with the shortest repositioning flight time
-   (tie: aircraft id);
-3. choose the shortest open path by distance;
-4. assign; otherwise leave the mission queued for the next call.
+On every replanning call, for each released pending mission in priority order
+(medical < cargo < passenger; ties by priority, release time, then id):
+1. a scheduled passenger flight flies with its scheduled aircraft when that
+   aircraft is free now; if the scheduled aircraft is unserviceable or
+   stranded at a closed airport, the nearest free compatible aircraft is used;
+   otherwise the flight waits (it is delayed, not reassigned);
+2. a medical or cargo mission takes the aircraft that is free now, passes the
+   shared feasibility check (not failed, capacity, range, runway, open path)
+   and has the shortest repositioning flight time (tie: aircraft id);
+3. every mission flies the shortest open path by distance;
+4. if nothing qualifies, the mission stays queued for the next call.
 The baseline never revisits an assignment. It is deliberately simple; it is
-not tuned.
+not tuned. Change log: version 1 (2026-09-24, before any experiment result
+was recorded) reassigned scheduled flights to any free aircraft as soon as
+they were released; on generated scenarios this produced worse passenger
+delay and connectivity than flying the published schedule and nothing else,
+which is the signature of a strawman, so rule 1 was introduced.
 
 ### 5.2 NORTHSTAR (OR-Tools CP-SAT)
 On every replanning call, solve one model over all undeparted missions and
 all usable aircraft: binary assignment variables, per-aircraft sequencing with
 transition (repositioning) times, hard constraints for availability, capacity,
 range, runway and airport/route status, optional service with unserved
-penalties, and a weighted integer objective. Full formulation:
-`docs/ARCHITECTURE.md` §7. Solver: single worker, fixed seed, 10 s limit,
-status recorded.
+penalties, and a weighted integer objective, over a 240-minute lookahead
+window plus every critical mission. Full formulation: `docs/ARCHITECTURE.md`
+§7. Solver: single worker, fixed seed, 10 s limit, status recorded.
 
 ### 5.3 Fairness invariants (tested)
 - Same scenario object, same initial state, same disruptions, same missions.
