@@ -171,4 +171,4 @@ named in words. The why checklist is concrete (runway 1,524 m gravel, range 1,14
 6. Backup presets go through the generic plan/caption path; only the primary preset was screenshot-verified end to end (V5 acceptance).
 7. Research page still has the 1440 px layout inside the 1200 px site (V4).
 
-**Commit:** _pending_
+**Commit:** 7f328b5
