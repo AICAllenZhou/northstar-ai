@@ -438,4 +438,4 @@ hub ("0903" at Cambridge Bay) at the default zoom, and flying aircraft still cro
 5. Medical-first and Connectivity-first runs of the Kitikmeot preset are not precomputed (only Balanced is warmed), so a live profile switch on stage solves in about a second; acceptable, but say so.
 6. The presenter rehearsal (three timed run-throughs) is the one checklist item the build cannot tick.
 
-**Commit:** _pending_
+**Commit:** af5a6f0

@@ -178,6 +178,6 @@ build, a screenshot set, a judge-style critique and a commit hash
 | V3 | Make it memorable: coastline behind the hero, map depth (graticule, halos, smoke boundary, route flow, trails), glass, docked demo card | 40a7f6f |
 | — | Experiment runner: four solver buckets; results re-run at 5f0d9ab (0 hash differences); regression tests | 5f0d9ab, a8ede20 |
 | V4 | Make it credible: Research page as a story, per-scenario strips, open-in-simulator, solver accounting, Data/About depth, decision-record fix | e16f190 |
-| V5 | Make it competition-ready: declutter, accessibility floor, 1280 px check, cold-start acceptance, docs | {{V5_COMMIT}} |
+| V5 | Make it competition-ready: declutter, accessibility floor, 1280 px check, cold-start acceptance, docs | af5a6f0 |
 
-Final branch: `waicy-overnight-polish`. Final commit: {{FINAL_COMMIT}}.
+Final branch: `waicy-overnight-polish`. Final commit: af5a6f0 (V5); the small commit after it records this hash in the log and this document, and is the branch tip.
