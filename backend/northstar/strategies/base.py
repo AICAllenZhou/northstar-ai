@@ -160,17 +160,38 @@ def build_candidate(state: SimulationState, t: int, aircraft_id: str, mission_id
     return Infeasible(aircraft_id, mission_id, fail_code or "NO_OPTION", fail_text or "no feasible origin/destination option")
 
 
+def queue_position(state: SimulationState, aircraft_id: str, t: int) -> tuple[str, int]:
+    """Airport and time at which the aircraft will next be free for NEW work: its current location if it
+    has no active mission, otherwise the active mission's destination at the estimated completion time."""
+    ast = state.aircraft[aircraft_id]
+    if ast.active_mission is None:
+        return ast.location(), max(ast.free_at, t)
+    ms = state.missions[ast.active_mission]
+    when = (ast.current_leg.arrive_min + TURNAROUND_MIN) if ast.current_leg else max(ast.free_at, t)
+    for leg in ast.itinerary:
+        if leg.purpose == "mission" and leg.from_airport == ms.origin:
+            when = max(when, ms.mission.release_min)
+        when += (leg.arrive_min - leg.depart_min) + TURNAROUND_MIN
+    return (ms.dest or ast.location()), when
+
+
 def restate_queues(view: StrategyView) -> list:
-    """Assignments for missions already queued but not departed (so a plan can keep them)."""
+    """Assignments for missions already queued but not departed, re-validated from where the aircraft will
+    be free; stale ones (e.g. destination closed since) are dropped so the mission returns to pending."""
     from northstar.models import Assignment
 
     out = []
     for a in sorted(view.state.aircraft.values(), key=lambda x: x.id):
+        from_apt, avail = queue_position(view.state, a.id, view.t)
         for mid in a.queue:
             ms = view.state.missions[mid]
             if ms.departed or ms.planned is None:
                 continue
+            c = build_candidate(view.state, view.t, a.id, mid, from_airport=from_apt, avail_at=avail)
+            if isinstance(c, Infeasible):
+                continue
             out.append(Assignment(**ms.planned))
+            from_apt, avail = c.dest, c.est_complete + TURNAROUND_MIN
     return out
 
 

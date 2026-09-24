@@ -134,3 +134,13 @@ def test_generated_scenarios_never_produce_rejected_assignments(network):
             trace = run(network, sc, strat)
             rejected = [e for e in trace.events if e["type"] == "REJECTED_ASSIGNMENT"]
             assert not rejected, (sc.id, strat.name, rejected[:3])
+
+
+def test_regression_active_mission_availability(network):
+    """gen-42-001 produced REJECTED_ASSIGNMENT events when a mid-mission aircraft was modelled at its
+    current position instead of its mission destination; must be clean now."""
+    from northstar.scenarios.generator import generate_scenario
+    for i in (1, 3, 9):
+        sc = generate_scenario(network, 42, i)
+        trace = run(network, sc, NorthstarStrategy())
+        assert not [e for e in trace.events if e["type"] == "REJECTED_ASSIGNMENT"], sc.id

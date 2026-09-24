@@ -17,7 +17,7 @@ from northstar.models import (
 )
 from northstar.sim.disruptions import apply_end, apply_start, generate_missions, ground_failure, recompute_routes
 from northstar.sim.state import SimulationState, StrategyView
-from northstar.strategies.base import Infeasible, build_candidate, hop_minutes, transition
+from northstar.strategies.base import Infeasible, build_candidate, hop_minutes, queue_position, transition
 
 REPLAN_EVENTS = {
     "MISSION_KNOWN", "MISSION_RELEASED", "DISRUPTION_START", "DISRUPTION_END", "AIRCRAFT_FAILED", "AIRCRAFT_FREE",
@@ -103,11 +103,8 @@ def _apply_plan(st: SimulationState, plan: Plan, t: int, triggers: list[str]) ->
             continue
         if asg.aircraft_id in chain_pos:
             from_apt, avail = chain_pos[asg.aircraft_id]
-        elif ast.active_mission:
-            am = st.missions[ast.active_mission]
-            from_apt, avail = (am.dest or ast.location()), max(ast.free_at, t)
         else:
-            from_apt, avail = None, None
+            from_apt, avail = queue_position(st, asg.aircraft_id, t)
         c = build_candidate(st, t, asg.aircraft_id, asg.mission_id, from_airport=from_apt, avail_at=avail)
         if isinstance(c, Infeasible):
             rejected += 1

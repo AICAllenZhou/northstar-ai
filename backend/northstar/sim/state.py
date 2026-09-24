@@ -184,9 +184,14 @@ class StrategyView:
     def disconnected_now(self) -> set[str]:
         return set(self.state.disconnected_since)
 
-    def candidate(self, aircraft_id: str, mission_id: str, risk_lambda: float = 0.0):
+    def candidate(self, aircraft_id: str, mission_id: str, risk_lambda: float = 0.0,
+                  from_airport: str | None = None, avail_at: int | None = None):
         from northstar.strategies.base import build_candidate
-        return build_candidate(self.state, self.t, aircraft_id, mission_id, risk_lambda)
+        return build_candidate(self.state, self.t, aircraft_id, mission_id, risk_lambda, from_airport, avail_at)
+
+    def queue_position(self, aircraft_id: str) -> tuple[str, int]:
+        from northstar.strategies.base import queue_position
+        return queue_position(self.state, aircraft_id, self.t)
 
     def transition(self, aircraft_id: str, from_airport: str, to_airport: str, risk_lambda: float = 0.0):
         from northstar.strategies.base import transition

@@ -63,6 +63,7 @@ class NorthstarStrategy:
             tuple(sorted(st.closed_airports)), tuple(sorted(st.closed_routes)),
             tuple(sorted(st.failed_aircraft(t))), tuple(aircraft),
             tuple(sorted(mid for a in st.aircraft.values() for mid in a.queue)),
+            tuple(sorted((a.id, a.active_mission) for a in st.aircraft.values())),
         )
         if sig == self._last_sig:
             return Plan(strategy=self.name, status="UNCHANGED")
@@ -74,11 +75,13 @@ class NorthstarStrategy:
         cands: dict[tuple[str, str], Candidate] = {}
         infeasible: dict[str, dict[str, str]] = {m.mission.id: {} for m in missions}
         avail_at: dict[str, int] = {}
+        avail_airport: dict[str, str] = {}
         for aid in aircraft:
-            ast = st.aircraft[aid]
-            avail_at[aid] = max(ast.free_at, t)
+            avail_airport[aid], avail_at[aid] = view.queue_position(aid)
+            if avail_at[aid] >= st.scenario.horizon_min:
+                continue  # busy until the end of the horizon: no new work
             for ms in missions:
-                c = view.candidate(aid, ms.mission.id, pol.risk_path_lambda)
+                c = view.candidate(aid, ms.mission.id, pol.risk_path_lambda, from_airport=avail_airport[aid], avail_at=avail_at[aid])
                 if isinstance(c, Candidate):
                     cands[(aid, ms.mission.id)] = c
                 else:

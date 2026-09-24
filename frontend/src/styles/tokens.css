@@ -19,6 +19,7 @@
 
   --ns: #2ee6d6;      /* NORTHSTAR accent (buttons, badges) */
   --ns-2: #1fc2b4;    /* NORTHSTAR chart / map mark */
+  --ns-chart: #17a99d; /* validated against the dark chart surface */
   --ns-dim: rgba(46, 230, 214, 0.14);
   --ns-ink: #04201d;  /* text on the teal button */
 
