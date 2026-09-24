@@ -3,7 +3,9 @@
 // first-entry onboarding dialog, the app header, one PNG per demo step (step 8
 // twice: before pressing RUN and during the solver-log replay), the simple and
 // Advanced command centre, the preset cards, the result and why cards, the run
-// moment, Research, Responsible AI, and three failure states.
+// moment, Research, Responsible AI, three failure states, plus (V3) the hero with
+// the coastline at 1440 (hero-coast), the landing scrolled under the glass header
+// (site-scrolled) and a zoomed Kivalliq map detail at demo step 9 (map-detail).
 //
 //   node scripts/demo_screenshots.mjs            (dev server on :5173, backend on :8000)
 //   BASE_URL=http://localhost:8000 node scripts/demo_screenshots.mjs   (production build served by the backend)
@@ -17,7 +19,11 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const OUT = process.env.OUT_DIR ?? path.resolve(HERE, '../../docs/screenshots')
 mkdirSync(OUT, { recursive: true })
 
-const browser = await chromium.launch()
+// Headless Chromium renders WebGL in software (SwiftShader) and, on tall viewports, its captures can
+// leave a band of the map canvas unpainted (a compositing artifact of the software path, not app state:
+// the same page captured with the GPU is complete). On macOS the real GPU is always available, so ask for it.
+const GPU_ARGS = process.platform === 'darwin' ? ['--use-angle=metal', '--use-gl=angle', '--ignore-gpu-blocklist'] : []
+const browser = await chromium.launch({ args: GPU_ARGS })
 const problems = []
 const expected = []
 const external = new Set()
@@ -50,6 +56,41 @@ const shot = (page, name, opts = {}) => page.screenshot({ path: path.join(OUT, `
 const url = (hash) => `${BASE}/${hash}`
 const waitMarkers = (page) => page.waitForFunction(() => document.querySelectorAll('.ac-marker').length >= 10, null, { timeout: 60000 })
 const waitIdle = (page) => page.waitForFunction(() => !document.querySelector('.cc .spinner'), null, { timeout: 120000 })
+// The map exposes itself as window.__northstarMap; wait for MapLibre's next `idle` event (tiles loaded,
+// nothing pending). Best effort with a timeout: headless software WebGL is slow, and during playback the
+// trails source is rewritten every frame.
+const waitMapIdle = (page, ms = 15000) => page.evaluate((ms) => new Promise((res) => {
+  const m = window.__northstarMap
+  if (!m) return res(false)
+  const t = setTimeout(() => res(false), ms)
+  m.once('idle', () => { clearTimeout(t); res(true) })
+  m.triggerRepaint()
+}), ms).catch(() => false)
+// Landing sections reveal once they enter the viewport; a full-page capture never scrolls, so walk the
+// page first (and back to the top) before shooting it whole.
+async function revealAll(page) {
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += 400) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 40)) }
+    window.scrollTo(0, 0)
+  })
+  await page.waitForFunction(() => document.querySelectorAll('.reveal:not(.in)').length === 0, null, { timeout: 5000 }).catch(() => problems.push('landing: some sections did not reveal after scrolling through the page'))
+  await page.waitForTimeout(700)
+}
+// Demo step 9: one zoom level in on the Kivalliq region (flow, trails, disruption boundary, hub halos),
+// placed below the demo card, while playback continues; the view is restored afterwards.
+async function mapDetail(page) {
+  const prev = await page.evaluate(() => {
+    const m = window.__northstarMap
+    if (!m) return null
+    const before = { center: m.getCenter().toArray(), zoom: m.getZoom() }
+    m.easeTo({ center: [-93.4, 62.9], zoom: m.getZoom() + 1, duration: 0 })
+    return before
+  })
+  if (!prev) problems.push('map-detail: window.__northstarMap not available')
+  await page.waitForTimeout(1500)
+  await shot(page, 'map-detail')
+  if (prev) await page.evaluate((p) => window.__northstarMap?.easeTo({ center: p.center, zoom: p.zoom, duration: 0 }), prev)
+}
 const clipTo = async (page, selector, pad = 8) => {
   const box = await page.locator(selector).first().boundingBox()
   if (!box) return undefined
@@ -73,6 +114,23 @@ async function scrollToSection(page, selector) {
 }
 
 // ---- 0. Landing site --------------------------------------------------------
+// 0a. Hero with the coastline at 1440, in the DISRUPTED phase of the loop; then the page scrolled
+//     to the method section under the glass header.
+const h1440 = await newPage({ width: 1440, height: 900 }, { label: 'landing-1440' })
+await h1440.goto(url('#/'))
+await h1440.waitForSelector('.hero', { timeout: 30000 })
+const coastOk = await h1440.waitForSelector('.loop-svg .coast-nunavut', { timeout: 30000 }).then(() => true).catch(() => false)
+if (!coastOk) problems.push('hero: coastline path (.coast-nunavut) did not render')
+await h1440.waitForSelector('.loop-state.disrupted', { timeout: 15000 }).catch(() => problems.push('hero: DISRUPTED phase not reached within 15 s'))
+await h1440.waitForTimeout(900) // let the phase transition settle
+await shot(h1440, 'hero-coast')
+await checkNoHorizontalScroll(h1440, 'home 1440')
+await scrollToSection(h1440, '#method')
+await h1440.waitForSelector('.site-hdr.scrolled', { timeout: 5000 }).catch(() => problems.push('landing: header did not switch to its scrolled (glass) state'))
+await h1440.waitForTimeout(500) // section reveal
+await shot(h1440, 'site-scrolled')
+await h1440.close()
+
 const home = await newPage(undefined, { label: 'landing' })
 await home.goto(url('#/'))
 await home.waitForSelector('.hero', { timeout: 30000 })
@@ -110,6 +168,7 @@ await mob.waitForSelector('.hero', { timeout: 30000 })
 await mob.waitForFunction(() => !!document.querySelector('.loop-svg, .loop-placeholder'), null, { timeout: 30000 })
 await mob.waitForSelector('#evidence .ev-card, #evidence .ev-note', { timeout: 30000 })
 await mob.waitForTimeout(1200)
+await revealAll(mob)
 await shot(mob, 'home-mobile-390', { fullPage: true })
 await checkNoHorizontalScroll(mob, 'home 390')
 await mob.setViewportSize({ width: 768, height: 1024 })
@@ -139,6 +198,7 @@ await waitMarkers(page)
 // Start from a healthy network so the cards (not the compact scenario card) are visible.
 if (await page.$('.scenario-simple .btn.ghost')) { await page.click('.scenario-simple .btn.ghost'); await waitIdle(page) }
 await page.waitForSelector('.preset-card', { timeout: 30000 })
+await waitMapIdle(page)
 await page.waitForTimeout(1500) // basemap tiles/labels
 await shot(page, 'presets')
 
@@ -154,8 +214,10 @@ const atStep = (n) => page.waitForFunction((n) => {
 
 for (let i = 1; i <= 10; i++) {
   await atStep(i)
-  // let playback animate for the two "play" steps so aircraft are airborne in the picture
-  await page.waitForTimeout(i === 7 || i === 9 ? 4000 : 1400)
+  // let playback animate for the two "play" steps so aircraft are airborne in the picture;
+  // step 9 first takes the zoomed map detail while the morning wildfire is still active (~09:00–12:00 at 2×)
+  if (i === 9) { await page.waitForTimeout(1400); await mapDetail(page); await page.waitForTimeout(1000) }
+  else await page.waitForTimeout(i === 7 ? 4000 : 1400)
   await shot(page, `step-${String(i).padStart(2, '0')}`)
   const err = await page.$('.demo-error')
   if (err) problems.push(`demo step ${i} showed an error: ${await err.textContent()}`)
@@ -224,6 +286,7 @@ await shot(page, 'responsible-ai')
 await page.goto(url('#/simulation'))
 await page.waitForSelector('.annunciator', { timeout: 30000 })
 await page.evaluate(() => { document.querySelector('.cc-right')?.scrollTo(0, 0); document.querySelector('.cc-left')?.scrollTo(0, 0) })
+await waitMapIdle(page)
 await page.waitForTimeout(800)
 await shot(page, 'command-center')
 await page.close()
@@ -251,8 +314,10 @@ await pDown.close()
 const pNarrow = await newPage({ width: 1024, height: 1400 }, { label: 'narrow-1024' })
 await pNarrow.goto(url('#/simulation'))
 await waitMarkers(pNarrow)
-await pNarrow.waitForTimeout(1000)
+await waitMapIdle(pNarrow)
+await pNarrow.waitForTimeout(2500) // headless software WebGL can still be finishing its first frames
 await shot(pNarrow, 'narrow-1024')
+await checkNoHorizontalScroll(pNarrow, 'simulation 1024')
 await pNarrow.close()
 
 await browser.close()

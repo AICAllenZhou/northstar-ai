@@ -23,7 +23,7 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 /* eyebrow: the small uppercase label that heads every panel */
 .eyebrow {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -54,6 +54,7 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   white-space: nowrap;
 }
 .btn:hover:not(:disabled) { background: var(--bg-3); border-color: var(--ink-3); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
 .btn.small { padding: 5px 9px; font-size: 12px; }
 .btn.ghost { background: transparent; }
 .btn.danger { border-color: var(--danger); color: var(--danger); }
@@ -82,7 +83,7 @@ select.input option { background: var(--bg-2); }
   padding: 2px 7px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   border: 1px solid var(--line-2);

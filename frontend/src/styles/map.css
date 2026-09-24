@@ -14,7 +14,7 @@
   font: 600 11px/1 var(--font); color: #c9d4df; white-space: nowrap; pointer-events: none;
   text-shadow: 0 0 3px #08121a, 0 0 3px #08121a, 0 1px 2px #000;
 }
-.map-label.hub { font-weight: 800; font-size: 12px; color: #fff; text-transform: uppercase; letter-spacing: 0.06em; }
+.map-label.hub { font-family: var(--font-display); font-weight: 700; font-size: 12.5px; color: #fff; text-transform: uppercase; letter-spacing: 0.08em; }
 
 .ac-marker {
   width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
@@ -31,7 +31,7 @@
 .ac-marker.stranded { opacity: 0.7; }
 .ac-marker .ac-id {
   position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
-  font: 700 9px/1 var(--mono); color: #e6edf3; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none;
+  font: 500 9px/1 var(--mono); color: #e6edf3; text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none;
 }
 .ac-marker.highlight::before {
   content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid var(--ns);
@@ -58,10 +58,10 @@
 
 .info-panel {
   position: absolute; bottom: 10px; left: 10px; width: 290px; max-height: calc(100% - 20px); overflow: auto; z-index: 5; font-size: 12.5px;
-  background: rgba(16, 23, 31, 0.95); border: 1px solid var(--line-2); border-radius: var(--r-2); box-shadow: var(--shadow);
+  border-radius: var(--r-2);
 }
 .info-panel header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 12px 4px; }
-.info-panel h3 { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.info-panel h3 { font-size: 15px; font-weight: 600; line-height: 1.2; }
 .info-flag { padding: 4px 12px 2px; }
 .info-panel dl { margin: 0; padding: 6px 12px 12px; display: flex; flex-direction: column; gap: 4px; }
 .info-row { display: grid; grid-template-columns: 96px 1fr; gap: 8px; }
@@ -70,7 +70,7 @@
 
 .map-legend {
   position: absolute; right: 10px; bottom: 10px; z-index: 4; padding: 8px 10px;
-  background: rgba(16, 23, 31, 0.9); border: 1px solid var(--line); border-radius: var(--r-2);
+  border-radius: var(--r-2);
   display: grid; grid-template-columns: repeat(2, auto); gap: 3px 14px; font-size: 11px; color: var(--ink-2);
 }
 .legend-item { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
@@ -86,3 +86,20 @@
 .sw.plane.combi { background: var(--combi); } .sw.plane.util { background: var(--util); }
 .sw.fire { background: rgba(255,122,69,0.35); border: 1px solid #ff7a45; }
 .sw.wx { background: rgba(127,166,217,0.35); border: 1px dashed #7fa6d9; }
+.sw.line.flow { border-top: 2.5px dashed var(--ns); opacity: 0.8; }
+.sw.line.trail { border-top: 2px solid var(--pax); opacity: 0.45; }
+
+/* Arctic glass: every surface that floats over the map (demo card, run moment, info panel, legend). */
+.info-panel, .map-legend, .demo-card, .rm-card {
+  background: rgba(14, 21, 31, 0.86);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border: 1px solid rgba(158, 195, 223, 0.16);
+  box-shadow: inset 0 1px 0 rgba(233, 241, 248, 0.06), var(--shadow);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .info-panel, .map-legend, .demo-card, .rm-card { background: rgba(14, 21, 31, 0.97); }
+}
+
+/* The RUN moment's one beat: the map behind it dims to 60 % (300 ms), and lifts when the result is revealed. */
+.cc-dim { position: absolute; inset: 0; z-index: 25; background: rgba(7, 12, 20, 0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.cc-map.dimmed .cc-dim { opacity: 1; }

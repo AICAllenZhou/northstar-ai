@@ -1,6 +1,7 @@
 // Thin fetch wrapper over the local FastAPI backend. All URLs are relative
 // ("/api/...") so the same build works behind the Vite proxy and when the
 // backend serves frontend/dist itself. No other network access exists.
+import type { FeatureCollection } from 'geojson'
 import type {
   CompareResponse, DecisionRecord, DisruptionInput, ExperimentSummary, HealthResponse, ImpactResponse,
   MetricsInfoResponse, NetworkResponse, Policy, Preset, RunResult, Scenario, ScenarioState,
@@ -83,6 +84,8 @@ export const api = {
   compare: () => request<CompareResponse>('/compare'),
   decisions: () => request<DecisionRecord[]>('/decisions'),
   experimentsLatest: () => request<ExperimentSummary>('/experiments/latest'),
+  /** Natural Earth basemap layer as GeoJSON (the map style loads these by URL; the hero loop draws the coastline from the same data). */
+  basemap: (layer: 'countries' | 'provinces' | 'lakes') => request<FeatureCollection>(`/basemap/${layer}`),
 }
 
 export const EXPERIMENTS_CSV_URL = '/api/experiments/results.csv'

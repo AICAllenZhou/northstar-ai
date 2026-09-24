@@ -27,7 +27,7 @@
   border: 1px solid var(--line-2); border-radius: 4px; background: var(--bg-0);
 }
 .annunciator .lamp { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-3); flex: none; }
-.ann-state { font-weight: 800; letter-spacing: 0.14em; font-size: 13px; line-height: 1.1; }
+.ann-state { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.14em; font-size: 14px; line-height: 1.1; }
 .ann-sub { font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.02em; }
 .annunciator.normal .lamp { background: var(--good); box-shadow: 0 0 10px var(--good); }
 .annunciator.normal .ann-state { color: var(--good); }
@@ -46,7 +46,7 @@
   background: var(--warn-dim); color: #ffd58a; font-size: 12px; border-top: 1px solid rgba(255, 176, 32, 0.25);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.disc-icon { width: 15px; height: 15px; border-radius: 50%; background: var(--warn); color: #241600; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.disc-icon { width: 15px; height: 15px; border-radius: 50%; background: var(--warn); color: #241600; font-weight: 600; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 
 .conn-banner {
   display: flex; align-items: center; gap: 12px; padding: 8px 16px; font-size: 13px;

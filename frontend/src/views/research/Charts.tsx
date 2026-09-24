@@ -62,7 +62,7 @@ function SegLabel(props: { x?: unknown; y?: unknown; width?: unknown; height?: u
   const w = Number(props.width), h = Number(props.height), x = Number(props.x), y = Number(props.y)
   const v = Number(props.value)
   if (!Number.isFinite(w) || w < 24 || !v) return null
-  return <text x={x + w / 2} y={y + h / 2} dy={4} textAnchor="middle" fill="#fff" fontSize={11.5} fontWeight={700}>{v}</text>
+  return <text x={x + w / 2} y={y + h / 2} dy={4} textAnchor="middle" fill="#fff" fontSize={11.5} fontWeight={600}>{v}</text>
 }
 
 function WLTip({ active, payload }: { active?: boolean; payload?: TipPayload[] }) {

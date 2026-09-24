@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { MetricComparison } from '../api/types'
 import { pValue } from '../lib/format'
 import { duration } from '../lib/time'
 import { HREF } from '../router'
 import { useStore } from '../state/store'
 import { RUN_EXPERIMENT_CMD } from './copy'
+import { useCountUp, useInView } from './reveal'
 import { Section } from './Section'
 
 const KEYS = ['disconnected_community_hours', 'passenger_delay_avg_min', 'medical_response_avg_min', 'cancelled_flights']
@@ -52,33 +53,12 @@ function Results() {
   const comp = exp.comparisons[exp.primary_policy]
   const n = exp.n_scenarios
   const trade = (exp.tradeoffs[exp.primary_policy] ?? []).filter((k) => comp[k])
+  const gridRef = useRef<HTMLDivElement>(null)
+  const inView = useInView(gridRef)
   return (
     <>
-      <div className="ev-grid">
-        {KEYS.filter((k) => comp[k]).map((k) => {
-          const c = comp[k]
-          const imp = c.improvement_pct
-          const better = imp !== null && imp > 0
-          const word = imp === null ? '' : c.direction === 'lower' ? (better ? 'lower' : 'higher') : (better ? 'higher' : 'lower')
-          return (
-            <article className="ev-card" key={k} aria-label={c.label}>
-              <h3>{c.label}</h3>
-              <p className={`ev-imp ${better ? '' : 'bad'}`}>
-                <span className="num">{imp === null ? '—' : `${Math.abs(imp).toFixed(0)}%`}</span>
-                <span className="imp-word">{word} mean</span>
-              </p>
-              <p className="ev-vals"><span className="base">{fmtMean(c, c.baseline.mean)}</span> → <span className="ns">{fmtMean(c, c.northstar.mean)}</span>{(c.unit === 'flights' || c.unit === 'count') && <span className="ev-unit"> {c.unit === 'flights' ? 'flights ' : ''}per scenario</span>}</p>
-              <p className="ev-vals-l">baseline → NORTHSTAR, mean{c.unit === 'flights' || c.unit === 'count' ? ' per scenario' : ''}</p>
-              <p className="ev-wins">Better in <b>{c.wins}</b> of {n} scenarios{c.ties ? ` · ${c.ties} ties` : ''}{c.losses ? ` · ${c.losses} losses` : ''}</p>
-              <div className="ev-bar" aria-hidden>
-                <span className="w" style={{ width: `${(c.wins / n) * 100}%` }} />
-                <span className="t" style={{ width: `${(c.ties / n) * 100}%` }} />
-                <span className="l" style={{ width: `${(c.losses / n) * 100}%` }} />
-              </div>
-              <p className="ev-p">sign test {pValue(c.p_value)}</p>
-            </article>
-          )
-        })}
+      <div className="ev-grid" ref={gridRef}>
+        {KEYS.filter((k) => comp[k]).map((k) => <EvidenceCard key={k} c={comp[k]} n={n} run={inView} />)}
       </div>
       <aside className="ev-trade" aria-label="Trade-off">
         <p className="mono-label">Trade-off</p>
@@ -92,5 +72,34 @@ function Results() {
         ))}
       </aside>
     </>
+  )
+}
+
+/** One headline card. When revealed, the NORTHSTAR mean counts from the baseline mean to its own value
+ *  and the improvement counts from 0 (600 ms); both stay static under reduced motion or when a value is missing. */
+function EvidenceCard({ c, n, run }: { c: MetricComparison; n: number; run: boolean }) {
+  const imp = c.improvement_pct
+  const better = imp !== null && imp > 0
+  const word = imp === null ? '' : c.direction === 'lower' ? (better ? 'lower' : 'higher') : (better ? 'higher' : 'lower')
+  const numeric = c.baseline.mean !== null && c.northstar.mean !== null
+  const nsMean = useCountUp(c.baseline.mean ?? 0, c.northstar.mean ?? 0, run && numeric)
+  const impShown = useCountUp(0, Math.abs(imp ?? 0), run && imp !== null)
+  return (
+    <article className="ev-card" aria-label={c.label}>
+      <h3>{c.label}</h3>
+      <p className={`ev-imp ${better ? '' : 'bad'}`}>
+        <span className="num">{imp === null ? '—' : `${impShown.toFixed(0)}%`}</span>
+        <span className="imp-word">{word} mean</span>
+      </p>
+      <p className="ev-vals"><span className="base">{fmtMean(c, c.baseline.mean)}</span> → <span className="ns">{numeric ? fmtMean(c, nsMean) : fmtMean(c, c.northstar.mean)}</span>{(c.unit === 'flights' || c.unit === 'count') && <span className="ev-unit"> {c.unit === 'flights' ? 'flights ' : ''}per scenario</span>}</p>
+      <p className="ev-vals-l">baseline → NORTHSTAR, mean{c.unit === 'flights' || c.unit === 'count' ? ' per scenario' : ''}</p>
+      <p className="ev-wins">Better in <b>{c.wins}</b> of {n} scenarios{c.ties ? ` · ${c.ties} ties` : ''}{c.losses ? ` · ${c.losses} losses` : ''}</p>
+      <div className="ev-bar" aria-hidden>
+        <span className="w" style={{ width: `${(c.wins / n) * 100}%` }} />
+        <span className="t" style={{ width: `${(c.ties / n) * 100}%` }} />
+        <span className="l" style={{ width: `${(c.losses / n) * 100}%` }} />
+      </div>
+      <p className="ev-p">sign test {pValue(c.p_value)}</p>
+    </article>
   )
 }

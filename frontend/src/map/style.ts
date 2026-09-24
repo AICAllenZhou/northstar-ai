@@ -1,5 +1,6 @@
 import type { StyleSpecification } from 'maplibre-gl'
 import { basemapUrl } from '../api/client'
+import { graticule } from './geo'
 
 // Fully offline basemap: three Natural Earth GeoJSON layers served by the
 // backend, styled as a dark "radar scope": deep ocean, slightly lighter land,
@@ -13,6 +14,8 @@ export const MAP_COLORS = {
   lake: '#0b151d',
   border: '#2c3b4a',
   coast: '#22303c',
+  nunavutCoast: 'rgba(158, 195, 223, 0.28)',
+  graticule: 'rgba(158, 195, 223, 0.07)',
   routeNormal: '#34465a',
   routeUsedBaseline: '#a9b6c4',
   routeUsedNorthstar: '#2ee6d6',
@@ -39,6 +42,8 @@ export function buildStyle(): StyleSpecification {
       countries: { type: 'geojson', data: basemapUrl('countries') },
       provinces: { type: 'geojson', data: basemapUrl('provinces') },
       lakes: { type: 'geojson', data: basemapUrl('lakes') },
+      // Client-built: meridians every 10°, parallels every 5° over the Canadian Arctic.
+      graticule: { type: 'geojson', data: graticule() },
     },
     layers: [
       { id: 'ocean', type: 'background', paint: { 'background-color': MAP_COLORS.ocean } },
@@ -47,6 +52,9 @@ export function buildStyle(): StyleSpecification {
       { id: 'lakes', type: 'fill', source: 'lakes', paint: { 'fill-color': MAP_COLORS.lake } },
       { id: 'province-borders', type: 'line', source: 'provinces', paint: { 'line-color': MAP_COLORS.border, 'line-width': 0.8 } },
       { id: 'coast', type: 'line', source: 'countries', paint: { 'line-color': MAP_COLORS.coast, 'line-width': 0.6 } },
+      // A slightly brighter coastline for Nunavut only, so the territory reads as the subject.
+      { id: 'nunavut-coast', type: 'line', source: 'provinces', filter: ['==', ['get', 'name'], 'Nunavut'], paint: { 'line-color': MAP_COLORS.nunavutCoast, 'line-width': 0.8 } },
+      { id: 'graticule', type: 'line', source: 'graticule', paint: { 'line-color': MAP_COLORS.graticule, 'line-width': 0.6 } },
     ],
   }
 }

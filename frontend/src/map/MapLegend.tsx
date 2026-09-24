@@ -13,6 +13,8 @@ export function MapLegend() {
       <div className="legend-item"><span className="sw plane util" />Utility</div>
       <div className="legend-item"><span className="sw fire" />Wildfire</div>
       <div className="legend-item"><span className="sw wx" />Weather</div>
+      <div className="legend-item"><span className="sw line flow" />Flow: direction flown</div>
+      <div className="legend-item"><span className="sw line trail" />Trail: leg so far</div>
     </div>
   )
 }

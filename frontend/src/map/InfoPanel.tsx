@@ -12,7 +12,8 @@ export function InfoPanel() {
   const decisions = useStore((s) => s.decisions)
   const tIdx = useStore((s) => Math.floor(s.t / 30))
   const select = useStore((s) => s.select)
-  if (!selected || !network) return null
+  const hiddenByDemo = useStore((s) => s.demoActive && !s.advanced)
+  if (!selected || !network || hiddenByDemo) return null
   const t = tIdx * 30
   const status = statusAt(scenario, run, t, network)
   const close = () => select(null)

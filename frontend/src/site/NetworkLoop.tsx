@@ -1,8 +1,10 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { api } from '../api/client'
 import type { Scenario } from '../api/types'
+import type { FeatureCollection } from 'geojson'
 import { PRIMARY_PRESET } from '../components/demoSteps'
 import { useStore } from '../state/store'
+import { buildCoastPaths, type CoastPaths } from './coast'
 import { buildLoopModel, PHASES, phaseCopy, type LoopModel, type LoopPhase } from './loopModel'
 
 const PHASE_MS = 4000 // three states, 12-second loop
@@ -23,16 +25,20 @@ export function NetworkLoop() {
   const network = useStore((s) => s.network)
   const connection = useStore((s) => s.connection)
   const [preset, setPreset] = useState<Scenario | null>(null)
+  const [provinces, setProvinces] = useState<FeatureCollection | null>(null)
   const reduced = useReducedMotion()
   const [phase, setPhase] = useState<LoopPhase>('connected')
 
   useEffect(() => {
     let alive = true
     api.presetDetail(PRIMARY_PRESET).then((p) => { if (alive) setPreset(p) }).catch(() => undefined)
+    // The coastline is a quiet backdrop: if it fails to load the loop still draws.
+    api.basemap('provinces').then((fc) => { if (alive) setProvinces(fc) }).catch(() => undefined)
     return () => { alive = false }
   }, [connection])
 
   const model = useMemo(() => (network ? buildLoopModel(network, preset) : null), [network, preset])
+  const coast = useMemo(() => (model && provinces ? buildCoastPaths(provinces, model.project, model.width, model.height) : null), [model, provinces])
 
   useEffect(() => {
     if (reduced || !model?.fire) return
@@ -59,7 +65,7 @@ export function NetworkLoop() {
           {(['disrupted', 'optimized'] as LoopPhase[]).map((p) => (
             <div key={p}>
               <PhaseLabel model={model} phase={p} />
-              <NetworkFigure model={model} phase={p} animated={false} />
+              <NetworkFigure model={model} coast={coast} phase={p} animated={false} />
             </div>
           ))}
         </div>
@@ -71,7 +77,7 @@ export function NetworkLoop() {
   return (
     <figure className="loop">
       <PhaseLabel model={model} phase={phase} />
-      <NetworkFigure model={model} phase={phase} animated={!reduced} />
+      <NetworkFigure model={model} coast={coast} phase={phase} animated={!reduced} />
       {caption}
     </figure>
   )
@@ -87,7 +93,7 @@ function PhaseLabel({ model, phase }: { model: LoopModel; phase: LoopPhase }) {
   )
 }
 
-function NetworkFigure({ model, phase, animated }: { model: LoopModel; phase: LoopPhase; animated: boolean }) {
+function NetworkFigure({ model, coast, phase, animated }: { model: LoopModel; coast: CoastPaths | null; phase: LoopPhase; animated: boolean }) {
   const gid = useId().replaceAll(':', '')
   const c = phaseCopy(model, phase)
   return (
@@ -103,7 +109,14 @@ function NetworkFigure({ model, phase, animated }: { model: LoopModel; phase: Lo
           <stop offset="70%" stopColor="#f5a623" stopOpacity="0.10" />
           <stop offset="100%" stopColor="#f5a623" stopOpacity="0" />
         </radialGradient>
+        <clipPath id={`clip-${gid}`}><rect x="0" y="0" width={model.width} height={model.height} /></clipPath>
       </defs>
+      {coast && (
+        <g className="coast" clipPath={`url(#clip-${gid})`} aria-hidden>
+          <path className="coast-other" d={coast.other} />
+          <path className="coast-nunavut" d={coast.nunavut} />
+        </g>
+      )}
       {model.fire && (
         <g className="fire">
           <circle cx={model.fire.x} cy={model.fire.y} r={model.fire.r * 1.35} fill={`url(#fire-${gid})`} />

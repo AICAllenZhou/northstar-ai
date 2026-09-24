@@ -4,6 +4,7 @@ import { FALLBACK_DISCLAIMER } from './copy'
 import { DataColumns } from './DataColumns'
 import { Evidence } from './Evidence'
 import { NetworkLoop } from './NetworkLoop'
+import { useRevealOnScroll } from './reveal'
 import { Section } from './Section'
 
 const TILES = [
@@ -36,10 +37,9 @@ const PIPELINE = [
   { t: 'Measured outcomes', p: 'Ten metrics, the same function for every strategy; unserved missions are counted, not dropped.' },
 ]
 
-const PREVIEW_STATES = ['Normal network', 'Wildfire detected', 'Airport closed', 'Medical emergency', 'Run NORTHSTAR']
-
 export function Home() {
   const disclaimer = useStore((s) => s.network?.disclaimer) ?? FALLBACK_DISCLAIMER
+  useRevealOnScroll()
   return (
     <div className="home">
       <section className="hero" aria-labelledby="hero-h">
@@ -76,7 +76,7 @@ export function Home() {
         </div>
       </Section>
 
-      <section id="question" className="sec" aria-labelledby="question-h">
+      <section id="question" className="sec reveal" aria-labelledby="question-h">
         <div className="wrap">
           <p className="eyebrow-brief">The question</p>
           <h2 id="question-h" className="rq">Can AI-assisted optimization improve the resilience of remote and Northern aviation networks during major disruptions?</h2>
@@ -98,9 +98,6 @@ export function Home() {
             <img src="/preview/command-center.png" width={1600} height={1000} alt="The NORTHSTAR command center during the guided demo: a map of Nunavut with open and closed routes, the disruption list, a do-nothing / baseline / NORTHSTAR comparison table and the explained decisions." />
           </figure>
           <div className="preview-side">
-            <ol className="chain state-chain" aria-label="Demo states">
-              {PREVIEW_STATES.map((s, i) => <li key={s} className={i === PREVIEW_STATES.length - 1 ? 'ns' : ''}>{s}</li>)}
-            </ol>
             <div className="cta-col">
               <a className="btn accent big" href={`${HREF.simulation}?demo=1`}>Enter the simulation →</a>
               <a className="more quiet" href={HREF.simulation}>Explore on your own</a>
@@ -135,7 +132,7 @@ export function Home() {
         </div>
       </Section>
 
-      <section className="launch" aria-labelledby="launch-h">
+      <section className="launch reveal" aria-labelledby="launch-h">
         <div className="wrap">
           <p className="eyebrow-brief">Launch</p>
           <h2 id="launch-h">Enter the NORTHSTAR command center</h2>

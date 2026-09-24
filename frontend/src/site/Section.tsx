@@ -5,7 +5,7 @@ export function Section({ id, eyebrow, title, lead, children, className = '' }: 
   id: string; eyebrow: string; title: ReactNode; lead?: ReactNode; children?: ReactNode; className?: string
 }) {
   return (
-    <section id={id} className={`sec ${className}`} aria-labelledby={`${id}-h`}>
+    <section id={id} className={`sec reveal ${className}`} aria-labelledby={`${id}-h`}>
       <div className="wrap">
         <div className="sec-head">
           <p className="eyebrow-brief">{eyebrow}</p>

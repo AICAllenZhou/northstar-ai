@@ -172,3 +172,82 @@ named in words. The why checklist is concrete (runway 1,524 m gravel, range 1,14
 7. Research page still has the 1440 px layout inside the 1200 px site (V4).
 
 **Commit:** 7f328b5
+
+## Version 3 — "Make it memorable"
+
+**Observed problems (from V2):** the hero network floated in a void and did not read as Canada;
+the map was the V0 map (no grid, no hub presence, no smoke boundary, flat used routes, no trails,
+hard cuts between Baseline and NORTHSTAR); panels asked for font weights the bundled Plex faces do
+not carry, so browsers synthesised bold; the demo card covered the map and, at the climax (steps
+8–10), the network it was talking about; the right column repeated the result and why cards
+during the demo; the 1024 px layout left half the map empty and clipped Sanikiluaq.
+
+**Decisions:** one signature (the hero network loop) grounded by the real Nunavut coastline drawn
+from the bundled Natural Earth provinces layer, through the loop's own projection; a quiet map
+treatment in the existing tokens (10°/5° graticule at 7 % ice, Nunavut coastline, soft hub halos,
+smoke as inner disc + dashed boundary + softer outer disc, a slow directional dash flow on the
+routes the displayed plan actually uses, a short trail behind each flying aircraft, 500 ms paint
+cross-fades when switching plans); "arctic glass" only on surfaces that sit over the map or the
+page (demo card, run moment, map info panel, legend, scrolled site header), solid columns
+everywhere else; one cinematic beat at RUN (map dims to 60 %, the plan's routes fade in on
+"See the result") and nothing else; every animation off under `prefers-reduced-motion`. Type:
+only bundled weights (Sans 400/500/600, Condensed 600/700, Mono 400/500); display numbers and
+headings moved to Condensed 700 with tabular figures. Landing: once-only section reveals, a
+staggered hero, evidence numbers counting up to the real values, the launch aurora drifting over
+60 s. Chanel rule: the Preview section's five-pill "state chain" was removed (it restated the
+Method pipeline and the live stepper and pushed the CTA below the fold on phones).
+On review of the agent's pass I found the new "fit the populated south" rule keyed on the map
+column width (870 px at the standard 1600 px layout), so it fired on the desktop too and the taller
+demo cards then hid the whole network at steps 8–10. Rather than tune the overlay, the guided demo
+card now docks into the right column on layouts of 1280 px and wider (in place of the action
+stack, which the card makes redundant), so the map is never covered during the demo; below
+1280 px it remains a bottom overlay. The fit rule now keys on the viewport width as intended.
+
+**Implementation:** `frontend/src/site/coast.ts` (GeoJSON → SVG paths, ring/bbox culling,
+decimation), `site/reveal.ts` (reveal-on-scroll, in-view, count-up hooks), `map/flow.ts` (rAF
+dash-array controller at ≈12 fps that stops on reduced motion, hidden tab, no displayed run,
+unmount), `scripts/perf_flow.mjs` (frame-rate gate); map layers restructured so each strategy's
+used routes are their own solid + flow layers (MapLibre cannot transition data-driven paint, so a
+real cross-fade needs per-layer opacity), `lib/derive.ts` (`legFrom`, `usedRouteDirections`),
+`map/{style,layers,geo,MapView,MapLegend,InfoPanel}`; `DemoStepper.tsx` (segmented progress bar,
+content fade, portal into `#demo-dock`), `views/CommandCenter.tsx` (dock, dim overlay, column
+contents during the demo), `StatusTiles.tsx` (value tick, suppressed during playback), the whole
+`styles/` set for the type pass and glass; `site/{NetworkLoop,loopModel,Home,Section,Evidence}`;
+screenshot driver (three new shots, MapLibre idle wait, reveal-all before full-page captures,
+1024/1440 overflow checks, GPU launch on macOS); `frontend/README.md`.
+
+**Test results:** backend `uv run pytest` 38 passed (unchanged; backend untouched); `npm run build` 0
+errors (JS 1,800.85 kB / 506 kB gzip, +9 kB over V2 for the coast, flow, reveal and trail code;
+CSS 175 kB); `oxlint` 0 warnings; screenshot driver: no external requests, no page or console
+errors, no horizontal overflow at 390 / 768 / 1024 / 1440 / 1600 px; guided demo wall time step
+1 → 10 in the driver 22.5 s (≈19 s of deliberate screenshot pauses plus a 3 s zoomed-detail
+detour). Frame-rate gate (`scripts/perf_flow.mjs`, GPU renderer): 60 fps idle and 60 fps at 2×
+playback with flow and trails; the flow loop stops within a second of no run being displayed.
+Headless software WebGL measures 21–28 fps, which is the emulator, not the app. `grep` for
+`font-weight: 700/800/900` returns nine hits, all on `--font-display` rules. Optimizer, metrics,
+datasets and `experiments/results/` untouched.
+
+**Visual review (as a judge):** the hero now reads as Arctic Canada at a glance: Baffin Island, Hudson Bay
+and the mainland behind the network, hubs labelled, red closures and amber cut-off communities in
+the DISRUPTED phase. The command-centre map has depth without noise: a faint graticule, a
+coastline for the territory, soft halos on hubs, the smoke as a disc with a dashed boundary and a
+softer outer ring, and the plan's routes flowing in the direction flown (grey for the baseline,
+teal for NORTHSTAR), with short trails behind flying aircraft. Switching plans cross-fades.
+Pressing RUN dims the map and brings up the glass solver card; "See the result" lifts the dim and
+the teal routes fade in. With the demo card docked in the right column, every step shows the whole
+network next to the numbers it is talking about; the damage grid, the four-row result and the
+why checklist all fit the column at 1600 px. Type is finally one family at real weights.
+Weak spots: at Cambridge Bay a mission marker sits on the hub label; the legend covers
+Sanikiluaq's label at 1600 px; the docked card is smaller than the old modal, so the RUN button
+is less theatrical (deliberate: the map is the show).
+
+**What still needs improvement:**
+1. Label and marker collisions at hubs (Cambridge Bay medevac marker over the label; Rankin Inlet cluster); the legend hides Sanikiluaq's label. V5: declutter rules for markers on hubs, a collapsible legend.
+2. Step 3 is titled "Airport closure" but the event it adds is the ATR 42 aircraft failure (the wildfire closed the airport in step 2). V4 copy pass.
+3. The five RUN stage labels are the brief's wording, not the optimizer's real phases; on a cache hit they complete at once and only the fact line explains. V4: name the real steps (feasibility table → candidate pairs → CP-SAT model → solve → simulator validation) and show the retrieved-from-start-up state plainly.
+4. Research page still has the 1440 px layout inside the 1200 px site and no story order (V4).
+5. Experiment summary solver line: 154 of the 2,438 "CP-SAT calls" were NO FEASIBLE SOLUTION decisions with no solve (found while V3 ran; runner and methodology already changed, uncommitted). V4: regression test, hash-verified re-run, Research page copy.
+6. The 1280–1439 px three-column case (docked card in a 440 px column) is implemented but not screenshot-verified; toggling Advanced mid-demo moves the card back to the overlay. V5 acceptance.
+7. `scripts/demo.sh` runs the smoke test against the shared session at start-up, so the first screen a presenter sees is the loaded primary preset, not the healthy network (V5).
+
+**Commit:** _pending_

@@ -57,3 +57,22 @@ export function circlePolygon(center: LngLat, radiusKm: number, steps = 64): Lng
   }
   return ring
 }
+
+/** Graticule for the map: meridians every `lonStep`° and parallels every `latStep`°
+ *  over the given box, densified so they stay smooth under any projection. */
+export function graticule(
+  lon0 = -140, lon1 = -50, lat0 = 50, lat1 = 85, lonStep = 10, latStep = 5,
+): { type: 'FeatureCollection'; features: { type: 'Feature'; properties: { kind: 'meridian' | 'parallel' }; geometry: { type: 'LineString'; coordinates: LngLat[] } }[] } {
+  const features: { type: 'Feature'; properties: { kind: 'meridian' | 'parallel' }; geometry: { type: 'LineString'; coordinates: LngLat[] } }[] = []
+  for (let lon = lon0; lon <= lon1; lon += lonStep) {
+    const coordinates: LngLat[] = []
+    for (let lat = lat0; lat <= lat1; lat += 1) coordinates.push([lon, lat])
+    features.push({ type: 'Feature', properties: { kind: 'meridian' }, geometry: { type: 'LineString', coordinates } })
+  }
+  for (let lat = lat0; lat <= lat1; lat += latStep) {
+    const coordinates: LngLat[] = []
+    for (let lon = lon0; lon <= lon1; lon += 2) coordinates.push([lon, lat])
+    features.push({ type: 'Feature', properties: { kind: 'parallel' }, geometry: { type: 'LineString', coordinates } })
+  }
+  return { type: 'FeatureCollection', features }
+}

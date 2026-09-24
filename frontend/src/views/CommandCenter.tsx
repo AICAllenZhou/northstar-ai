@@ -17,18 +17,25 @@ import { useStore } from '../state/store'
  *  Advanced mode: every control, the ten-metric table, solver diagnostics and the full decision list. */
 export function CommandCenter() {
   const advanced = useStore((s) => s.advanced)
+  const demoActive = useStore((s) => s.demoActive)
+  const dimmed = useStore((s) => s.runMoment !== null)
+  // While the guided demo is open in simple mode, its card docks into this column (wide layouts) in place of
+  // the action stack and carries the result and why cards, so the map stays fully visible.
+  const docked = demoActive && !advanced
+  const showCards = !docked
   return (
-    <div className={`cc ${advanced ? 'advanced' : 'simple'}`}>
+    <div className={`cc ${advanced ? 'advanced' : 'simple'} ${docked ? 'docked' : ''}`}>
       <aside className="cc-left" aria-label="Scenario">
         {advanced ? <><ScenarioPanel /><MissionList /></> : <><ScenarioSimple /><Happening /></>}
       </aside>
-      <main className="cc-map" aria-label="Network map">
+      <main className={`cc-map ${dimmed ? 'dimmed' : ''}`} aria-label="Network map">
         <MapView />
+        <div className="cc-dim" aria-hidden />
         <RunMoment />
       </main>
       <aside className="cc-right" aria-label="Response">
         <StatusTiles simple={!advanced} />
-        {advanced ? <><RunPanel /><ComparePanel /><DecisionsPanel /></> : <><ActionStack /><ResultCard /><WhyPanel /></>}
+        {advanced ? <><RunPanel /><ComparePanel /><DecisionsPanel /></> : <>{docked ? <div id="demo-dock" className="demo-dock" /> : <ActionStack />}{showCards && <><ResultCard /><WhyPanel /></>}</>}
       </aside>
       <footer className="cc-timeline">
         <Timeline simple={!advanced} />

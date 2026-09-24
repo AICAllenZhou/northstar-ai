@@ -62,7 +62,66 @@ while the request is in flight (one per ~350 ms, never beyond the last), then
 the truthful line ("Solved in … ms · n solver calls" or "Result retrieved:
 computed by the same engine at start-up in … ms" when `cached`), then a replay
 of the real solver log from `replans[]` (one line per CP-SAT call, first 12),
-then "See the result". Reduced motion shows everything at once.
+then "See the result". While it is open the map behind it dims to 60 %
+(`.cc-map.dimmed`, 300 ms); "See the result" lifts the dim and the NORTHSTAR
+routes cross-fade in. Reduced motion shows everything at once.
+
+While the guided demo is open in simple mode the right column shows only the
+status tiles and the action stack (the demo card carries the result and why
+cards) and the map's info panel stays hidden; they return when the demo exits
+or parks. Advanced mode is unchanged.
+
+## Map layers (`src/map`)
+
+Base style (`style.ts`, all offline): ocean background · land (Natural Earth
+countries) · Nunavut fill (provinces, filtered) · lakes · province borders ·
+coastlines · a brighter Nunavut coastline · a client-built graticule
+(meridians every 10°, parallels every 5°, 140–50° W, 50–85° N).
+Overlays (`layers.ts`, added on style load, bottom to top): disruption discs
+(inner disc with the dashed boundary, plus a softer outer disc at 1.35× radius
+and 40 % of the opacity for the smoke/weather drift) · hub halos (soft circle
+under hubs; danger-tinted when the hub is closed; teal for the selected
+airport) · routes (normal / elevated risk / closed) · one solid **used-routes**
+layer and one **flow** layer per strategy (`used-*`, `flow-*`, grey for the
+baseline, teal for NORTHSTAR, dim grey for do-nothing; line geometry is
+oriented in the direction the run actually flew the route, majority direction
+when both) · click-hit layer · highlighted decision path (glow + core) ·
+mission arrows · **aircraft trails** (the part of the current leg already
+flown, rebuilt on every time tick from `aircraftPositionsAt`) · community
+rings · airports. Aircraft, labels and mission icons remain DOM markers.
+
+The flow is a `line-dasharray` stepped through a 14-phase sequence at ~12 fps
+by `flow.ts` (`requestAnimationFrame` with a time gate, no React state). It
+runs only while a run is displayed and the tab is visible, never under
+`prefers-reduced-motion`, and is disposed with the map. Switching the displayed
+run only changes the opacity of the per-strategy layers, which MapLibre
+transitions (500 ms; 0 under reduced motion), so Baseline ↔ NORTHSTAR reads as
+a cross-fade; data-driven colours cannot be transitioned, which is why the used
+routes are separate layers rather than a `state` property. In the
+single-column layout (below 1280 px) or a map column taller than it is wide,
+the initial fit uses the airports south of 72° N so Iqaluit, Rankin Inlet and
+Cambridge Bay stay large; the wide layout keeps the full-network fit.
+
+For screenshots and diagnostics the map view exposes `window.__northstarMap`
+(the MapLibre instance) and `window.__northstarFlow` (`running`, `ticks`); the
+application itself never reads them.
+
+## Motion and reduced motion
+
+Everything animated is quiet and has an off switch: `prefers-reduced-motion`
+zeroes every CSS animation/transition (`base.css`), disables the landing
+section reveals (`site/reveal.ts`, IntersectionObserver, once, also skipped when
+the page is opened with an anchor), the hero stagger, the evidence count-up
+(`useCountUp`), the launch-band aurora drift, the status-tile tick, the demo
+step fade and the map flow loop; MapLibre paint transitions are created with
+duration 0. The landing hero draws the Nunavut coastline (and neighbouring land,
+fainter) behind the network loop from `/api/basemap/provinces`, projected with
+the loop's own equirectangular fit (`site/coast.ts`; rings under 8 points are
+dropped, the rest decimated to ≤ 4 000 + 2 000 points). Surfaces that float over
+the map or the page (demo card, run moment, info panel, legend, scrolled site
+header) use the same "arctic glass" (`rgba(14,21,31,0.86)` + 10 px backdrop
+blur, ice border, inner top highlight) with a solid fallback under
+`@supports not (backdrop-filter)`.
 
 ## Run
 
@@ -110,10 +169,11 @@ src/lib/                time (minutes after 06:00 -> HH:MM), metric formatting a
                         humanize (human sentences for disruptions, missions, result
                         rows, trade-offs and the decision checklist), prefs (Advanced flag)
 src/map/                MapView (imperative MapLibre updates from store subscriptions),
-                        style (offline basemap), layers (routes, airports, rings,
-                        disruption circles, mission arrows, highlight path), markers
+                        style (offline basemap, graticule), layers (routes, per-strategy
+                        used/flow layers, halos, rings, disruption discs, mission arrows,
+                        trails, highlight path), flow (dash-array animation loop), markers
                         (aircraft, labels with decluttering, mission icons), geo
-                        (great-circle interpolation), InfoPanel, MapLegend
+                        (great-circle interpolation, graticule), InfoPanel, MapLegend
 src/router.ts           hash router (parse, navigate, useRoute, titles)
 src/components/         Header (app header + Advanced switch), Onboarding, ErrorBanner
                         (+DatasetError), StatusTiles, Timeline (simple/advanced),
@@ -124,13 +184,15 @@ src/components/         Header (app header + Advanced switch), Onboarding, Error
                         DemoStepper (+demoSteps: plan builder and the ten steps)
 src/site/               SiteHeader, SiteFooter, Home (+Section, Evidence, DataColumns),
                         NetworkLoop (+loopModel: projection, closures, cut-off and
-                        reconnection paths), DataPage, AboutPage, copy
+                        reconnection paths; +coast: coastline paths), reveal (section
+                        reveals, in-view flag, count-up), DataPage, AboutPage, copy
 src/views/              CommandCenter, Research (+research/Charts), ResponsibleAI
 src/styles/             tokens (colour, type scale, fonts), base, header, command, panels,
                         map, timeline, demo, research, responsible, site, onboarding
 public/preview/         command-center.png (copy of docs/screenshots/step-07.png for the teaser)
 scripts/demo_screenshots.mjs   Playwright: landing, pages, onboarding, preset cards, guided demo
                                (incl. the run moment), simple/advanced mode, failure states
+scripts/perf_flow.mjs          Playwright: fps with flow + trails at 2× playback; flow stops when no run
 ```
 
 ## Behaviour notes
@@ -165,15 +227,27 @@ npm i -D playwright && npx playwright install chromium   # once
 node scripts/demo_screenshots.mjs                        # BASE_URL=http://localhost:5174 if the port differs
 ```
 
-Writes, into `docs/screenshots/`: `home-hero.png`, `home-problem.png`,
-`home-how.png`, `home-evidence.png`, `home-data.png`, `home-mobile-390.png`
-(full page at 390×844), `data.png`, `about.png` (full page), `onboarding.png`,
+Writes, into `docs/screenshots/`: `hero-coast.png` (hero at 1440 with the
+coastline, DISRUPTED phase), `site-scrolled.png` (landing at the method section
+under the glass header), `home-hero.png`, `home-problem.png`, `home-how.png`,
+`home-evidence.png`, `home-data.png`, `home-mobile-390.png` (full page at
+390×844), `data.png`, `about.png` (full page), `onboarding.png`,
 `app-header.png`, `presets.png` (simple mode, healthy), `step-01.png …
 step-10.png` plus `step-08-run.png` (the run moment during the solver-log
-replay), `research.png` (full page, reached through the demo's last button),
-`simple-mode.png`, `result-card.png`, `why-card.png`, `run-moment.png`,
-`advanced-mode.png`, `responsible-ai.png`, `command-center.png`,
-`research-empty.png`, `backend-down.png` and `narrow-1024.png`. It prints the
-wall time of the guided demo from step 1 to step 10, checks that the landing has
-no horizontal overflow at 390, 768 and 1600 px and that no request leaves
-localhost.
+replay) and `map-detail.png` (step 9, one zoom level in on the Kivalliq region:
+flow, trails, disruption boundary, hub halos), `research.png` (full page,
+reached through the demo's last button), `simple-mode.png`, `result-card.png`,
+`why-card.png`, `run-moment.png`, `advanced-mode.png`, `responsible-ai.png`,
+`command-center.png`, `research-empty.png`, `backend-down.png` and
+`narrow-1024.png`. It prints the wall time of the guided demo from step 1 to
+step 10, checks that the landing has no horizontal overflow at 390, 768, 1440
+and 1600 px (and the simulation at 1024), and that no request leaves localhost.
+
+`BASE_URL=http://localhost:8000 node scripts/perf_flow.mjs` measures the
+achieved frame rate with the NORTHSTAR run displayed and playback at 2× (flow +
+trails) for 5 s and checks that the flow loop stops once no run is displayed.
+Both scripts ask Chromium for the real GPU on macOS (ANGLE/Metal); plain
+headless Chromium renders WebGL in software (SwiftShader), which is not
+representative for frame rates and can leave a band of the map canvas
+unpainted in tall captures (visible in `narrow-1024.png` when the driver runs
+without a GPU).

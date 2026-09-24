@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Map as MlMap, NavigationControl, type ErrorEvent, type LngLatBoundsLike, type MapMouseEvent } from 'maplibre-gl'
-import { aircraftPositionsAt, statusAt, usedRouteIds } from '../lib/derive'
+import { aircraftPositionsAt, statusAt } from '../lib/derive'
+import { prefersReducedMotion } from '../lib/prefs'
 import { snapshotIndex } from '../lib/time'
 import { selectDisplayedRun, useStore } from '../state/store'
 import { InfoPanel } from './InfoPanel'
 import { MapLegend } from './MapLegend'
-import { addOverlayLayers, updateOverlays } from './layers'
+import { createFlowController, type FlowController } from './flow'
+import { addOverlayLayers, updateOverlays, updateTrails } from './layers'
 import {
   createAircraftMarker, createLabelMarker, createMissionMarker, declutterLabels, setAircraftState, setMissionState,
   type AircraftMarker, type LabelMarker, type MissionMarker,
@@ -13,9 +15,15 @@ import {
 import { buildStyle } from './style'
 import './worker'
 
+/** Debug / screenshot hooks (read-only for the app itself): the live map and the flow loop counters. */
+declare global {
+  interface Window { __northstarMap?: MlMap; __northstarFlow?: FlowController }
+}
+
 export function MapView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MlMap | null>(null)
+  const flowRef = useRef<FlowController | null>(null)
   const labelsRef = useRef<LabelMarker[]>([])
   const aircraftRef = useRef<globalThis.Map<string, AircraftMarker>>(new globalThis.Map())
   const missionsRef = useRef<globalThis.Map<string, MissionMarker>>(new globalThis.Map())
@@ -32,7 +40,13 @@ export function MapView() {
       dragRotate: false, pitchWithRotate: false, touchPitch: false, minZoom: 1.4, maxZoom: 9, fadeDuration: 0,
     })
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
-    map.on('load', () => { addOverlayLayers(map); setLoaded(true) })
+    map.on('load', () => {
+      addOverlayLayers(map, prefersReducedMotion() ? 0 : 500)
+      const flow = createFlowController(map)
+      flowRef.current = flow
+      window.__northstarFlow = flow
+      setLoaded(true)
+    })
     map.on('error', (e: ErrorEvent) => {
       const msg = e.error?.message ?? ''
       if (/basemap|fetch|network/i.test(msg)) setMapError('Basemap layers could not be loaded from /api/basemap.')
@@ -53,10 +67,15 @@ export function MapView() {
     const ro = new ResizeObserver(() => map.resize())
     ro.observe(el)
     mapRef.current = map
+    window.__northstarMap = map
     return () => {
       ro.disconnect()
+      flowRef.current?.dispose()
+      flowRef.current = null
       map.remove()
       mapRef.current = null
+      if (window.__northstarMap === map) delete window.__northstarMap
+      delete window.__northstarFlow
       setLoaded(false)
     }
   }, [])
@@ -64,11 +83,17 @@ export function MapView() {
   // 2. Static network content: fit bounds, labels, aircraft markers.
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !loaded || !network) return
+    const el = containerRef.current
+    if (!map || !loaded || !network || !el) return
     const north = network.airports.filter((a) => a.region !== 'South gateway')
-    const lons = north.map((a) => a.lon), lats = north.map((a) => a.lat)
+    // Single-column viewport (≤ 1279 px) or a tall map column: fit the populated south (below 72° N,
+    // Iqaluit / Rankin Inlet / Cambridge Bay) and let the High Arctic run off the top. The wide
+    // three-column layout keeps every community in view.
+    const tall = el.clientHeight > el.clientWidth * 1.1 || window.innerWidth < 1280
+    const fitTo = tall ? north.filter((a) => a.lat < 72) : north
+    const lons = fitTo.map((a) => a.lon), lats = fitTo.map((a) => a.lat)
     const bounds: LngLatBoundsLike = [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]]
-    map.fitBounds(bounds, { padding: { top: 50, bottom: 60, left: 90, right: 120 }, duration: 0 })
+    map.fitBounds(bounds, { padding: tall ? { top: 40, bottom: 70, left: 60, right: 60 } : { top: 50, bottom: 60, left: 90, right: 120 }, duration: 0 })
 
     const labels = network.airports.map((a) => createLabelMarker(map, a))
     labelsRef.current = labels
@@ -94,7 +119,7 @@ export function MapView() {
   }, [loaded, network])
 
   // 3. Everything that depends on scenario / run / time: overlays, mission
-  //    markers and aircraft positions, updated imperatively from the store.
+  //    markers, aircraft positions and trails, updated imperatively from the store.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loaded || !network) return
@@ -102,6 +127,7 @@ export function MapView() {
     const select = useStore.getState().select
     const missionMarkers = missionsRef.current
     const aircraftMarkers = aircraftRef.current
+    const flow = flowRef.current
 
     const syncMissions = () => {
       const s = useStore.getState()
@@ -123,10 +149,11 @@ export function MapView() {
       const status = statusAt(s.scenario, run, s.t, network)
       syncMissions()
       updateOverlays(map, {
-        network, status, run, displayedRun: s.displayedRun, usedRoutes: usedRouteIds(network, run),
+        network, status, run, runs: s.runs, displayedRun: s.displayedRun,
         missions: s.scenario?.missions ?? [], effects: s.scenario?.disruption_effects ?? [], t: s.t,
         highlightPath: s.highlightPath, selectedAirport: s.selected?.kind === 'airport' ? s.selected.id : null,
       })
+      flow?.setActive(s.displayedRun !== null)
       const outcomes = new globalThis.Map((run?.assignments ?? []).map((o) => [o.mission_id, o]))
       for (const m of s.scenario?.missions ?? []) {
         const mm = missionMarkers.get(m.id)
@@ -166,6 +193,7 @@ export function MapView() {
         m.marker.setLngLat(p.lngLat).setOffset(offset)
         setAircraftState(m, p.status, p.bearing, hl.has(p.id), sel === p.id)
       }
+      updateTrails(map, network, positions)
     }
 
     updateSlow()
@@ -178,6 +206,7 @@ export function MapView() {
     })
     return () => {
       unsub()
+      flow?.setActive(false)
       missionMarkers.forEach((m) => m.marker.remove())
       missionMarkers.clear()
     }

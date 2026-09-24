@@ -38,6 +38,8 @@ export interface LoopEdge {
 export interface LoopModel {
   width: number
   height: number
+  /** The equirectangular fit used for every node, so other layers (the coastline) land in the same place. */
+  project: (lat: number, lon: number) => { x: number; y: number }
   nodes: LoopNode[]
   edges: LoopEdge[]
   fire: { x: number; y: number; r: number; label: string } | null
@@ -63,9 +65,17 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 
 const edgeKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)
 
-export function buildLoopModel(net: NetworkResponse, preset: Scenario | null, width = 640, pad = 40): LoopModel {
+export interface LoopProjection {
+  width: number
+  height: number
+  /** Pixels per degree of latitude. */
+  scale: number
+  proj: (lat: number, lon: number) => { x: number; y: number }
+}
+
+/** Equirectangular fit of the community airports (southern gateways omitted) into `width` px with `pad` px margins. */
+export function loopProjection(net: NetworkResponse, width = 640, pad = 40): LoopProjection {
   const communityAirports = new Set(net.communities.map((c) => c.airport_id))
-  // The southern gateways (airports without a community) are omitted from the drawing.
   const drawn = net.airports.filter((a) => communityAirports.has(a.id))
   const meanLat = drawn.reduce((s, a) => s + a.lat, 0) / Math.max(1, drawn.length)
   const k = Math.cos((meanLat * Math.PI) / 180)
@@ -75,6 +85,14 @@ export function buildLoopModel(net: NetworkResponse, preset: Scenario | null, wi
   const scale = (width - 2 * pad) / Math.max(1e-6, maxX - minX)
   const height = Math.round((maxY - minY) * scale + 2 * pad)
   const proj = (lat: number, lon: number) => ({ x: pad + (lon * k - minX) * scale, y: pad + (-lat - minY) * scale })
+  return { width, height, scale, proj }
+}
+
+export function buildLoopModel(net: NetworkResponse, preset: Scenario | null, width = 640, pad = 40): LoopModel {
+  const communityAirports = new Set(net.communities.map((c) => c.airport_id))
+  // The southern gateways (airports without a community) are omitted from the drawing.
+  const drawn = net.airports.filter((a) => communityAirports.has(a.id))
+  const { height, scale, proj } = loopProjection(net, width, pad)
 
   // Closures implied by the preset (same thresholds as the simulator's disruption engine).
   const closed = new Set<string>()
@@ -181,7 +199,7 @@ export function buildLoopModel(net: NetworkResponse, preset: Scenario | null, wi
   const nameOf = (id: string) => net.airports.find((a) => a.id === id)?.community_name ?? id
   const byName = (ids: Iterable<string>) => [...ids].map(nameOf).sort()
   return {
-    width, height, nodes, edges, fire,
+    width, height, project: proj, nodes, edges, fire,
     communityCount: net.communities.length,
     routeCount: net.routes.length,
     closedNames: byName([...closed].filter((id) => communityAirports.has(id))),
