@@ -96,4 +96,4 @@ numbers with wins/ties/losses and a visible trade-off. Onboarding puts "Start gu
 5. Command-centre panels still use weight 800 that the bundled fonts do not carry; the map has no grid/glow treatment (V3).
 6. Research page keeps its 1440 px layout inside the 1200 px site (V4).
 
-**Commit:** see below.
+**Commit:** c23d745
