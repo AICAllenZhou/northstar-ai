@@ -1,0 +1,29 @@
+.timeline { height: var(--timeline-h); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 0 16px; }
+.tl-controls { display: flex; align-items: center; gap: 10px; }
+.btn.play { width: 40px; height: 40px; font-size: 15px; padding: 0; border-radius: 50%; background: var(--bg-2); border-color: var(--line-2); }
+.seg.speed button { padding: 6px 8px; font-size: 11.5px; }
+.tl-clock { font-size: 26px; font-weight: 700; letter-spacing: 0.04em; min-width: 132px; color: var(--ink); }
+.tl-track { position: relative; padding: 14px 0 20px; }
+.tl-track input[type='range'] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin: 0; border-radius: 3px;
+  background: linear-gradient(90deg, var(--ns) var(--pct), var(--line-2) var(--pct));
+}
+.tl-track input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid var(--ns); cursor: pointer; box-shadow: 0 0 0 2px var(--bg-1); }
+.tl-track input[type='range']::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--ns); cursor: pointer; }
+.tl-ticks { position: absolute; left: 0; right: 0; bottom: 2px; height: 14px; font-size: 10.5px; color: var(--ink-3); font-family: var(--mono); }
+.tl-ticks span { position: absolute; transform: translateX(-50%); }
+.tl-ticks span:first-child { transform: none; }
+.tl-ticks span:last-child { transform: translateX(-100%); }
+.tl-marks { position: absolute; left: 0; right: 0; top: 4px; height: 6px; }
+.tl-mark { position: absolute; top: 0; height: 6px; border-radius: 2px; background: var(--warn); opacity: 0.8; }
+.tl-mark.airport_closure { background: var(--danger); }
+.tl-mark.wildfire { background: #ff7a45; }
+.tl-mark.severe_weather { background: #7fa6d9; }
+.tl-mark.aircraft_failure { background: var(--ink-3); }
+.tl-mark.medical_emergency { background: var(--med); height: 4px; top: 1px; }
+.tl-mark.essential_cargo_request { background: var(--cargo); height: 4px; top: 1px; }
+.seg.trace button { padding: 8px 12px; font-size: 12px; letter-spacing: 0.04em; }
+.seg.trace button.on.run-northstar { color: var(--ns); box-shadow: inset 0 -2px 0 var(--ns); }
+.seg.trace button.on.run-baseline { color: var(--base-2); box-shadow: inset 0 -2px 0 var(--base-2); }
+.seg.trace button.on.run-do_nothing { color: var(--ink-2); box-shadow: inset 0 -2px 0 var(--ink-2); }
+@media (max-width: 1279px) { .timeline { grid-template-columns: 1fr; height: auto; gap: 6px; padding: 8px 16px; } }

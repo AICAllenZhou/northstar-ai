@@ -261,9 +261,8 @@ def verify(n: int, seed: int, policies: list[str]) -> int:
         print("no committed results.csv to verify against"); return 2
     with open(committed, newline="", encoding="utf-8") as f:
         old = {(r["scenario_id"], r["strategy"], r["policy"]): r["trace_hash"] for r in csv.DictReader(f)}
-    summary = run_experiment(n, seed, policies, out_dir=None)
     tmp = RESULTS / "_verify"
-    summary = run_experiment(n, seed, policies, out_dir=tmp)
+    run_experiment(n, seed, policies, out_dir=tmp)
     with open(tmp / "results.csv", newline="", encoding="utf-8") as f:
         new = {(r["scenario_id"], r["strategy"], r["policy"]): r["trace_hash"] for r in csv.DictReader(f)}
     diff = [k for k in old if old[k] != new.get(k)]

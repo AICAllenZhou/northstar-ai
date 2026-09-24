@@ -1,0 +1,48 @@
+/* Before vs After */
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.cmp-table th, .cmp-table td { padding: 5px 6px; text-align: right; vertical-align: top; border-bottom: 1px solid var(--line); }
+.cmp-table thead th { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; padding-top: 2px; padding-bottom: 6px; border-bottom: 1px solid var(--line-2); }
+.cmp-table th.col-dn { color: var(--ink-3); }
+.cmp-table th.col-base { color: var(--base-2); }
+.cmp-table th.col-ns { color: var(--ns); }
+.cmp-table tbody th { text-align: left; font-weight: 500; color: var(--ink-2); padding-left: 12px; line-height: 1.25; }
+.cmp-table tbody th .dir { color: var(--ink-3); font-size: 10.5px; white-space: nowrap; }
+.cmp-table tr.headline tbody th, .cmp-table tr.headline th { color: var(--ink); font-weight: 600; }
+.cmp-cell { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cmp-v { font-weight: 700; font-size: 14px; }
+tr.headline .cmp-v { font-size: 16px; }
+.cmp-sub { font-size: 10.5px; color: var(--ink-3); }
+.cmp-cell.censored .cmp-v { color: var(--danger); font-size: 12px; font-weight: 600; white-space: normal; }
+.cmp-cell.better { background: var(--good-dim); }
+.cmp-cell.better .cmp-v { color: var(--good); }
+.cmp-cell.worse { background: var(--danger-dim); }
+.cmp-cell.worse .cmp-v { color: var(--danger); }
+.cmp-cell.same .cmp-v { color: var(--ink-2); }
+.cmp-note { padding: 8px 12px 10px; font-size: 11px; color: var(--ink-3); line-height: 1.35; }
+
+/* Decisions */
+.decision-list { list-style: none; margin: 0; padding: 0 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.decision { background: var(--bg-2); border: 1px solid var(--line); border-left: 4px solid var(--ink-3); border-radius: var(--r-1); }
+.decision.type-medical { border-left-color: var(--med); }
+.decision.type-cargo { border-left-color: var(--cargo); }
+.decision.type-passenger { border-left-color: var(--pax); }
+.decision.open { border-color: var(--ns); border-left-color: var(--ns); }
+.decision.unserved { background: var(--danger-dim); border-color: rgba(255,71,71,0.4); }
+.decision-head { width: 100%; text-align: left; background: transparent; border: 0; padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--ink); font-size: 12.5px; }
+.decision-head .mono { font-weight: 700; }
+.decision-head .caret { color: var(--ink-3); }
+.decision-summary { flex-basis: 100%; color: var(--ink-2); line-height: 1.35; }
+.decision.open .decision-summary { color: var(--ink); }
+.decision-body { padding: 0 10px 10px 24px; font-size: 12.5px; }
+.decision-body h5 { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); margin: 10px 0 4px; }
+.decision-facts { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--ink-2); padding: 4px 0 2px; }
+.reasons, .alts { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.reasons li { padding-left: 12px; position: relative; color: var(--ink); line-height: 1.35; }
+.reasons li::before { content: ''; position: absolute; left: 0; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--ns); }
+.reasons .code { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-right: 6px; letter-spacing: 0.04em; }
+.alts li { display: flex; gap: 8px; align-items: flex-start; color: var(--ink-2); line-height: 1.35; }
+.chip.verdict-rejected { color: var(--danger); border-color: var(--danger); min-width: 66px; justify-content: center; }
+.chip.verdict-busy { color: var(--warn); border-color: var(--warn); min-width: 66px; justify-content: center; }
+.chip.verdict-worse { color: var(--ink-2); border-color: var(--line-2); min-width: 66px; justify-content: center; }
+.vs-base span { color: var(--ink); }
+.delta.good { color: var(--good); } .delta.bad { color: var(--danger); }

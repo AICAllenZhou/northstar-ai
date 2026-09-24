@@ -144,3 +144,14 @@ def test_regression_active_mission_availability(network):
         sc = generate_scenario(network, 42, i)
         trace = run(network, sc, NorthstarStrategy())
         assert not [e for e in trace.events if e["type"] == "REJECTED_ASSIGNMENT"], sc.id
+
+
+def test_policy_profile_changes_the_recommendation(network):
+    """Documented demo behaviour: on the Kitikmeot preset the balanced profile accepts a slower medevac to keep
+    two communities connected; medical-first reverses that. Weights are real levers, not decoration."""
+    from northstar.scenarios.presets import get_preset
+    sc = get_preset("kitikmeot_medevac_failure")
+    bal = evaluate(run(network, sc, NorthstarStrategy(policy=get_policy("balanced"))), network)
+    med = evaluate(run(network, sc, NorthstarStrategy(policy=get_policy("medical_first"))), network)
+    assert med.medical_response_avg_min < bal.medical_response_avg_min
+    assert med.disconnected_community_hours > bal.disconnected_community_hours
