@@ -236,8 +236,19 @@ so that any single one can be reloaded and inspected in the UI.
 - **Tradeoffs:** any metric where the baseline wins in more scenarios than
   NORTHSTAR is listed under "Tradeoffs" in the summary and on the Research
   screen.
-- **Solver caveat:** rows with solver status other than `OPTIMAL` are counted
-  and reported.
+- **Solver accounting:** every replanning decision NORTHSTAR records is put in
+  exactly one of four buckets, so the buckets sum to the total: proven
+  `OPTIMAL`; `FEASIBLE` (solution found, not proven optimal within the 10 s
+  limit); time-out or other solver status; and `NO_FEASIBLE_SOLUTION`, a
+  moment at which no usable aircraft could reach any pending mission (closed
+  airports, range, runway or availability), where the optimizer returns the
+  explicit "no feasible solution" answer without building a model. Only the
+  first three are CP-SAT solves (`cpsat_calls`). The summary reports all four
+  counts; a non-zero `NO_FEASIBLE_SOLUTION` count is expected in scenarios
+  where a community is unreachable for a period, and is not a failure of the
+  solver. (Earlier summaries reported the total as "CP-SAT calls" and left the
+  fourth bucket implicit; the accounting was made explicit in the overnight
+  sprint, with the metrics and trace hashes unchanged.)
 
 ---
 

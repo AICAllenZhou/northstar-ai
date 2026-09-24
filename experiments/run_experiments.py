@@ -46,15 +46,26 @@ def _row(scenario, strategy, policy, trace, metrics, wall):
          "strategy": strategy, "policy": policy, "run_status": trace.status, "wall_s": round(wall, 3),
          "n_disruptions": len(scenario.disruptions), "scenario_description": scenario.description}
     r.update(metrics.model_dump())
-    calls = trace.solver_calls
-    r["solver_calls"] = len(calls)
-    r["solver_optimal_calls"] = sum(1 for c in calls if c["status"] == "OPTIMAL")
-    r["solver_feasible_calls"] = sum(1 for c in calls if c["status"] == "FEASIBLE")
-    r["solver_timeout_calls"] = sum(1 for c in calls if c["status"] not in ("OPTIMAL", "FEASIBLE", "NO_FEASIBLE_SOLUTION"))
-    r["solver_max_wall_ms"] = max((c["wall_ms"] for c in calls), default=0)
+    r.update(solver_counts(trace.solver_calls))
     r["rejected_assignments"] = sum(1 for e in trace.events if e["type"] == "REJECTED_ASSIGNMENT")
     r["trace_hash"] = trace.hash()
     return r
+
+
+def solver_counts(calls: list[dict]) -> dict:
+    """Bucket every replanning decision the optimizer recorded, so the buckets always sum to the total.
+
+    `solver_calls` counts decision moments; only `solver_cpsat_calls` built and solved a CP-SAT model.
+    A moment where no aircraft could reach any pending mission is reported as NO_FEASIBLE_SOLUTION
+    without a solve (wall 0 ms) and is counted separately, not as a time-out or a failure."""
+    optimal = sum(1 for c in calls if c["status"] == "OPTIMAL")
+    feasible = sum(1 for c in calls if c["status"] == "FEASIBLE")
+    no_feasible = sum(1 for c in calls if c["status"] == "NO_FEASIBLE_SOLUTION")
+    timeout = len(calls) - optimal - feasible - no_feasible
+    return {"solver_calls": len(calls), "solver_cpsat_calls": optimal + feasible + timeout,
+            "solver_optimal_calls": optimal, "solver_feasible_calls": feasible,
+            "solver_no_feasible_calls": no_feasible, "solver_timeout_calls": timeout,
+            "solver_max_wall_ms": max((c["wall_ms"] for c in calls), default=0)}
 
 
 def _one(args):
@@ -139,8 +150,11 @@ def summarize(rows: list[dict], scenarios: list[dict], seed: int, policies: list
             "cargo_missions_total": sum(by[(s, "baseline", "-")]["cargo_count"] for s in sids),
         }
         ns_rows = [by[(s, "northstar", pid)] for s in sids]
-        out["solver"][pid] = {"calls": sum(r["solver_calls"] for r in ns_rows), "optimal_calls": sum(r["solver_optimal_calls"] for r in ns_rows),
+        out["solver"][pid] = {"calls": sum(r["solver_calls"] for r in ns_rows),
+                              "cpsat_calls": sum(r["solver_cpsat_calls"] for r in ns_rows),
+                              "optimal_calls": sum(r["solver_optimal_calls"] for r in ns_rows),
                               "feasible_not_optimal_calls": sum(r["solver_feasible_calls"] for r in ns_rows),
+                              "no_feasible_calls": sum(r["solver_no_feasible_calls"] for r in ns_rows),
                               "timeout_calls": sum(r["solver_timeout_calls"] for r in ns_rows),
                               "max_wall_ms": max(r["solver_max_wall_ms"] for r in ns_rows),
                               "mean_run_wall_s": round(mean(r["wall_s"] for r in ns_rows), 2),
@@ -182,8 +196,12 @@ def write_markdown(summary: dict, path: Path) -> None:
               f"- Cargo missions: {cz['cargo_missions_total']} total; unserved: baseline {cz['cargo_unserved_baseline']}, NORTHSTAR {cz['cargo_unserved_northstar']}.",
               f"- Cancelled scheduled flights: baseline {cz['cancelled_flights_baseline']}, NORTHSTAR {cz['cancelled_flights_northstar']}.", ""]
     so = summary["solver"][pid]
-    lines += ["## Solver", "", f"- CP-SAT calls: {so['calls']}; proven optimal: {so['optimal_calls']}; feasible-not-optimal: {so['feasible_not_optimal_calls']}; "
-              f"time-outs: {so['timeout_calls']}; slowest call {so['max_wall_ms']} ms; mean NORTHSTAR run {so['mean_run_wall_s']} s per scenario.",
+    lines += ["## Solver", "",
+              f"- Replanning decisions: {so['calls']}. CP-SAT models solved: {so['cpsat_calls']} (proven optimal {so['optimal_calls']}; "
+              f"feasible-not-optimal {so['feasible_not_optimal_calls']}; time-outs {so['timeout_calls']}). "
+              f"Decisions with no reachable aircraft for any pending mission, returned as NO FEASIBLE SOLUTION without a solve: {so['no_feasible_calls']}. "
+              f"The four buckets sum to the total.",
+              f"- Slowest solve {so['max_wall_ms']} ms; mean NORTHSTAR run {so['mean_run_wall_s']} s per scenario.",
               f"- Runs with a status other than OK: {so['runs_not_ok']}; assignments rejected by the simulator's feasibility check: {so['rejected_assignments']}.", ""]
     if len(summary["policies"]) > 1:
         lines += ["## Sensitivity to the policy profile", "", "| Metric | " + " | ".join(f"{p} improvement" for p in summary["policies"]) + " |",
