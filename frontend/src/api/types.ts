@@ -443,6 +443,10 @@ export interface DecisionRecord {
   path: string[] | null
   depart_min: number | null
   response_min: number | null
+  /** Request time (minutes since 06:00); response_min is the pick-up clock time, not a duration. */
+  release_min?: number | null
+  /** Pick-up minus request, in minutes (the duration a reader expects). */
+  response_after_request_min?: number | null
   complete_min: number | null
   decided_at_min: number | null
   reasons: DecisionReason[]
@@ -506,10 +510,15 @@ export interface CensoredCounts {
 }
 
 export interface SolverStats {
+  /** Replanning decisions NORTHSTAR recorded (all four buckets below sum to this). */
   calls: number
+  /** Decisions where a CP-SAT model was built and solved (= optimal + feasible-not-optimal + time-outs). Absent in older summaries. */
+  cpsat_calls?: number
   optimal_calls: number
   feasible_not_optimal_calls: number
   timeout_calls: number
+  /** Decisions at which no usable aircraft could reach any pending mission: the explicit NO FEASIBLE SOLUTION answer, no solve. Absent in older summaries. */
+  no_feasible_calls?: number
   max_wall_ms: number
   mean_run_wall_s: number
   runs_not_ok: number
@@ -527,6 +536,8 @@ export interface ExperimentSummary {
   metric_info: Record<string, MetricInfo>
   primary_metrics: string[]
   git_commit: string | null
+  /** True when the working tree had uncommitted changes when the experiment ran. */
+  git_dirty?: boolean
   python: string
   ortools_version: string
   platform: string

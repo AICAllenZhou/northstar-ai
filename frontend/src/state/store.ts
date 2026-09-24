@@ -63,6 +63,8 @@ export interface StoreState {
   experiments: ExperimentSummary | null
   experimentsMissing: boolean
   experimentsError: string | null
+  /** Scenario id currently being fetched and loaded by openExperimentScenario (the Research page's "Open in simulator"). */
+  openingScenario: string | null
   policyId: string
   displayedRun: StrategyName | null
   t: number
@@ -100,6 +102,8 @@ export interface StoreState {
   closeRunMoment: () => void
   refreshCompare: () => Promise<void>
   loadExperiments: () => Promise<void>
+  /** Fetch one generated experiment scenario, load it into the simulator session and go to the simulation route. */
+  openExperimentScenario: (scenarioId: string) => Promise<void>
   setDisplayedRun: (r: StrategyName | null) => void
   setTime: (t: number) => void
   play: () => void
@@ -173,6 +177,7 @@ export const useStore = create<StoreState>()((set, get) => {
     experiments: null,
     experimentsMissing: false,
     experimentsError: null,
+    openingScenario: null,
     policyId: 'balanced',
     displayedRun: null,
     t: 0,
@@ -334,6 +339,17 @@ export const useStore = create<StoreState>()((set, get) => {
         if (e instanceof ApiError && e.status === 404) set({ experiments: null, experimentsMissing: true, experimentsError: null })
         else if (e instanceof ApiError && e.unreachable) set({ connection: 'down', experimentsError: 'Backend unreachable.' })
         else set({ experimentsError: e instanceof Error ? e.message : String(e) })
+      }
+    },
+
+    openExperimentScenario: async (scenarioId) => {
+      set({ openingScenario: scenarioId })
+      try {
+        const st = await guarded('load', async () => api.loadScenario(await api.experimentScenario(scenarioId)), () => quiet(get().openExperimentScenario(scenarioId)))
+        applyScenario(st)
+        navigate(HREF.simulation)
+      } finally {
+        if (get().openingScenario === scenarioId) set({ openingScenario: null })
       }
     },
 

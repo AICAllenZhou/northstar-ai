@@ -265,6 +265,9 @@ without invoking the solver, with a per-mission reason list.
 DecisionRecord
   mission_id, mission_type, priority, community_name
   aircraft_id | null, aircraft_type, path [airport ids], depart_min, response_min, complete_min
+    (clock times, minutes since 06:00; response_min is the pick-up time, not a duration),
+  release_min, response_after_request_min (= response_min − release_min, the duration a reader expects;
+    equals vs_baseline.northstar_value for completed medevacs — tested)
   reasons: [ {code, text, data} ]
       PRIORITY, CAPACITY_OK, RANGE_OK, RUNWAY_OK, NEAREST_RANK (rank, nearest_id, why_not_nearest),
       AVOIDS_CLOSED (ids), ALTERNATE_HUB (from, to), RISK_AVOIDED (Δrisk), PREPOSITIONED,

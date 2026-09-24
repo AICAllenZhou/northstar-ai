@@ -1,4 +1,5 @@
 import { ResponsibleAI } from '../views/ResponsibleAI'
+import { BEFORE_REAL_USE, GLOSSARY, LIMITATIONS } from './copy'
 
 const STEPS = [
   { t: 'Model the network', p: 'Airports, communities and routes become a graph. Each aircraft carries its range, runway and capacity limits, so the model knows which legs are possible for which aircraft.' },
@@ -29,6 +30,32 @@ export function AboutPage() {
       <section className="wrap stack" aria-labelledby="stack-h">
         <p className="mono-label" id="stack-h">Stack</p>
         <ul className="stack-row">{STACK.map((s) => <li key={s}>{s}</li>)}</ul>
+      </section>
+
+      <section id="limitations" className="wrap" aria-labelledby="lim-h">
+        <p className="eyebrow-brief">Limitations</p>
+        <h2 id="lim-h">What the simulation leaves out</h2>
+        <p>Stated before the experiment was run, in the methodology document (§3.6 and §9). Read every result on the Research page with these in mind.</p>
+        <ul className="plainlist">
+          {LIMITATIONS.map((l) => <li key={l}>{l}</li>)}
+        </ul>
+      </section>
+
+      <section id="real-use" className="wrap" aria-labelledby="real-h">
+        <p className="eyebrow-brief">Distance to reality</p>
+        <h2 id="real-h">What it would take to use this for real</h2>
+        <p>From the Responsible AI statement (§9). None of this is part of the project.</p>
+        <ol className="plainlist numbered">
+          {BEFORE_REAL_USE.map((l) => <li key={l}>{l}</li>)}
+        </ol>
+      </section>
+
+      <section id="glossary" className="wrap" aria-labelledby="gl-h">
+        <p className="eyebrow-brief">How to read the numbers</p>
+        <h2 id="gl-h">A short glossary for the Research page</h2>
+        <dl className="glossary">
+          {GLOSSARY.map((g) => <div key={g.t}><dt>{g.t}</dt><dd>{g.d}</dd></div>)}
+        </dl>
       </section>
 
       <section id="responsible-ai" className="wrap" aria-labelledby="rai-h">

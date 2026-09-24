@@ -1,5 +1,6 @@
+import type { NetworkResponse } from '../api/types'
 import { useStore } from '../state/store'
-import { REBUILD_CMD } from './copy'
+import { NOT_DONE, PROVENANCE_ROWS, REBUILD_CMD, type DataKind } from './copy'
 import { DataColumns } from './DataColumns'
 
 interface DatasetMeta {
@@ -27,6 +28,13 @@ const KIND: Record<string, { cls: string; label: string }> = {
   mixed: { cls: 'mixed', label: 'Mixed' },
   synthetic: { cls: 'syn', label: 'Synthetic' },
 }
+const BADGE: Record<DataKind, { cls: string; label: string }> = { real: { cls: 'real', label: 'Real' }, synthetic: { cls: 'syn', label: 'Synthetic' }, derived: { cls: 'derived', label: 'Derived' } }
+
+/** "28 airports" from /api/network, or nothing while the backend has not answered. */
+function countText(network: NetworkResponse | null, key: 'airports' | 'communities' | 'routes' | 'aircraft' | 'schedule' | null, unit: string): string | null {
+  if (!network || !key) return null
+  return `${network[key].length} ${unit}`
+}
 
 export function DataPage() {
   const network = useStore((s) => s.network)
@@ -47,8 +55,41 @@ export function DataPage() {
         <DataColumns expanded />
       </section>
 
+      <section className="wrap" aria-labelledby="prov-h">
+        <h2 id="prov-h">Provenance, one row per dataset</h2>
+        <p>Source, licence and use for everything the simulation runs on. Counts come from the local API; the facts are those of <code>docs/DATA_PROVENANCE.md</code>.</p>
+        <div className="table-scroll">
+          <table className="ds-table prov-table">
+            <colgroup><col className="p-name" /><col className="p-kind" /><col className="p-src" /><col className="p-lic" /><col className="p-use" /></colgroup>
+            <thead><tr><th>Dataset</th><th>Kind</th><th>Source</th><th>Licence</th><th>Used for</th></tr></thead>
+            <tbody>
+              {PROVENANCE_ROWS.map((r) => {
+                const count = countText(network, r.countOf, r.countUnit)
+                return (
+                  <tr key={r.dataset}>
+                    <td>{r.dataset}{count && <span className="fields mono">{count}</span>}</td>
+                    <td><span className={`chip ${BADGE[r.kind].cls}`}>{BADGE[r.kind].label}</span></td>
+                    <td>{r.source}</td>
+                    <td>{r.licence}</td>
+                    <td>{r.usedFor}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="prov-legend"><span className="chip real">Real</span> traceable to a named public download · <span className="chip derived">Derived</span> computed from real data by a stated formula · <span className="chip syn">Synthetic</span> invented for the simulation and labelled as such.</p>
+      </section>
+
+      <section className="wrap" aria-labelledby="notdone-h">
+        <h2 id="notdone-h">What we deliberately did not do</h2>
+        <ul className="notdone">
+          {NOT_DONE.map((n) => <li key={n.t}><h3>{n.t}</h3><p>{n.p}</p></li>)}
+        </ul>
+      </section>
+
       <section className="wrap" aria-labelledby="ds-h">
-        <h2 id="ds-h">Processed datasets</h2>
+        <h2 id="ds-h">Processed datasets, from the sidecars</h2>
         <p>Each file under <code>datasets/processed/</code> carries a machine-readable sidecar (<code>*.meta.json</code>) that states what is real, what is synthetic, and under which licence. This table is read from those sidecars through the local API.</p>
         {names.length === 0 ? (
           <div className="ev-note" role="status">

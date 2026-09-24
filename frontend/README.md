@@ -11,7 +11,7 @@ local FastAPI backend; no external request is ever made.
 |---|---|---|
 | `#/` | Landing: hero with the live network loop, situation, research question, method, preview, evidence (from `/api/experiments/latest`), data, limits, launch | site header |
 | `#/simulation` | Command center (mounted on first visit, then kept mounted so the map keeps its state). `?demo=1` starts the guided demo directly. | app header |
-| `#/research` | Research results | site header |
+| `#/research` | Research results, told as a story (see below) | site header |
 | `#/data` | Data and provenance (real vs synthetic, dataset sidecars from `/api/network.metadata`) | site header |
 | `#/about` | About the technology, Responsible AI (`#/about#responsible-ai`), credits | site header |
 
@@ -23,6 +23,40 @@ The store keeps the legacy `view` field for the demo steps; `setView()` maps
 On the first visit to `#/simulation` in a browser session a welcome dialog
 offers "Start guided demo" or "Explore on my own" (`sessionStorage`
 `northstar.onboarded`); `#/simulation?demo=1` skips it.
+
+## Research page
+
+`views/Research.tsx` (+ `views/research/Charts.tsx`, `Explorer.tsx`,
+`styles/research.css`) reads `/api/experiments/latest` once and renders the
+paired experiment in this order, at the site width: **the question** and what
+would count as an answer (page head, with n, seed, policy, commit, generated
+date and OR-Tools version from the summary) → **method** (five-node diagram,
+CSS only) → **headline** (the three resilience metrics with the largest
+wins-minus-losses margin, each as baseline → NORTHSTAR mean, improvement,
+W/L/T bar, sign test and the do-nothing reference; a caption says why those
+three) → **every scenario, every metric** (one paired-difference strip per
+primary metric, plain SVG: one tick per scenario at NORTHSTAR − baseline,
+oriented so left of zero is NORTHSTAR better, own symmetric scale, ties with
+the runner's tolerance, median marker, losses in the warm colour) → **where
+NORTHSTAR loses** (the `tradeoffs` metrics with W/L/T, why more reroutes are
+expected, and the individual scenarios where NORTHSTAR was worse on
+disconnected-community hours, each with **Open in simulator**) → **censoring
+and completeness** → **policy sensitivity** (table plus a sentence naming the
+metric on which the profiles disagree most, and the weights that differ) →
+**solver honesty** (one stacked bar of the four buckets that sums to the
+replanning decisions; `cpsat_calls` / `no_feasible_calls` are optional and
+derived when absent) → **scenario explorer** (all rows, sticky header,
+click a metric header to sort worst-for-NORTHSTAR first, filter on the
+disruption mix, headline-5 / all-10 columns, Open in simulator per row) →
+**reproduce it** (command built from n and seed, commit and dirty flag,
+versions, generated time, CSV download, file names, methodology document).
+
+**Open in simulator** (`store.openExperimentScenario`) fetches
+`/api/experiments/scenarios/{id}`, posts it to `/api/scenario/load
+{scenario}` and navigates to `#/simulation`; the run buttons there solve that
+scenario live. The empty (404), error and loading states keep the `.rs-empty`
+card; the guided demo still parks on this page with the "Back to the demo"
+toast.
 
 ## Simple mode and Advanced mode
 
@@ -57,10 +91,13 @@ into steps 2–5 (extras grouped into step 5, fewer steps when it has fewer
 than four).
 
 The **run moment** (`components/RunMoment.tsx`, also used by the panel
-buttons) is an overlay over the map: five stages advance with a live timer
-while the request is in flight (one per ~350 ms, never beyond the last), then
-the truthful line ("Solved in … ms · n solver calls" or "Result retrieved:
-computed by the same engine at start-up in … ms" when `cached`), then a replay
+buttons) is an overlay over the map: five stages, named after the optimizer's
+real phases in the order `NorthstarStrategy.plan()` runs them (read the
+network state → feasibility table → CP-SAT model → solve → the simulator
+validates the plan), advance with a live timer while the request is in flight
+(one per ~350 ms, never beyond the last), then the truthful line ("Solved in …
+ms · n solver calls", or, when `cached`, "This scenario was solved at start-up
+by the same engine (… ms); nothing is recomputed now."), then a replay
 of the real solver log from `replans[]` (one line per CP-SAT call, first 12),
 then "See the result". While it is open the map behind it dims to 60 %
 (`.cc-map.dimmed`, 300 ms); "See the result" lifts the dim and the NORTHSTAR
@@ -178,7 +215,10 @@ src/router.ts           hash router (parse, navigate, useRoute, titles)
 src/components/         Header (app header + Advanced switch), Onboarding, ErrorBanner
                         (+DatasetError), StatusTiles, Timeline (simple/advanced),
                         simple mode: ScenarioSimple (+Happening), PresetCards, ActionStack,
-                        ResultCard, WhyCard (+WhyPanel), RunMoment;
+                        ResultCard, WhyCard (+WhyPanel; "Alternatives considered" expands to a
+                        table of every aircraft in the fleet with the optimizer's verdict and
+                        reason, the non-candidates from the run's snapshot at decision time),
+                        RunMoment;
                         advanced mode: ScenarioPanel, DisruptionForm, MissionList, RunPanel
                         (+RunStatus diagnostics), ComparePanel, DecisionsPanel;
                         DemoStepper (+demoSteps: plan builder and the ten steps)
@@ -186,12 +226,14 @@ src/site/               SiteHeader, SiteFooter, Home (+Section, Evidence, DataCo
                         NetworkLoop (+loopModel: projection, closures, cut-off and
                         reconnection paths; +coast: coastline paths), reveal (section
                         reveals, in-view flag, count-up), DataPage, AboutPage, copy
-src/views/              CommandCenter, Research (+research/Charts), ResponsibleAI
+src/views/              CommandCenter, Research (+research/Charts: strips, W/L/T bar, solver
+                        buckets; +research/Explorer: scenario table, Open in simulator), ResponsibleAI
 src/styles/             tokens (colour, type scale, fonts), base, header, command, panels,
                         map, timeline, demo, research, responsible, site, onboarding
 public/preview/         command-center.png (copy of docs/screenshots/step-07.png for the teaser)
 scripts/demo_screenshots.mjs   Playwright: landing, pages, onboarding, preset cards, guided demo
-                               (incl. the run moment), simple/advanced mode, failure states
+                               (incl. the run moment), simple/advanced mode, failure states,
+                               the Research story sections and the Open-in-simulator round trip
 scripts/perf_flow.mjs          Playwright: fps with flow + trails at 2× playback; flow stops when no run
 ```
 
@@ -239,9 +281,21 @@ flow, trails, disruption boundary, hub halos), `research.png` (full page,
 reached through the demo's last button), `simple-mode.png`, `result-card.png`,
 `why-card.png`, `run-moment.png`, `advanced-mode.png`, `responsible-ai.png`,
 `command-center.png`, `research-empty.png`, `backend-down.png` and
-`narrow-1024.png`. It prints the wall time of the guided demo from step 1 to
-step 10, checks that the landing has no horizontal overflow at 390, 768, 1440
-and 1600 px (and the simulation at 1024), and that no request leaves localhost.
+`narrow-1024.png`; plus (V4) `research-story.png` (question, method and
+headline in one tall clip), `research-strips.png`, `research-losses.png`,
+`research-solver.png`, `research-explorer.png` (sorted worst-first by the
+first metric), `research-open-sim.png` (the command centre right after
+"Open in simulator"), `data-page.png` (the provenance table),
+`about-page.png` (the limitations list) and `why-alternatives.png` (the why
+card with every candidate aircraft). It prints the wall time of the guided
+demo from step 1 to step 10, checks that the landing has no horizontal
+overflow at 390, 768, 1440 and 1600 px (and the simulation at 1024), that no
+request leaves localhost, that every strip draws one tick per scenario, that
+the four solver buckets sum to the total, that sorting the explorer puts a
+loss first when losses exist, and that "Open in simulator" really loads the
+generated scenario (header name, network state, `/api/scenario` id and
+disruption count) before resetting the session through the UI so the demo
+that follows starts from a healthy network.
 
 `BASE_URL=http://localhost:8000 node scripts/perf_flow.mjs` measures the
 achieved frame rate with the NORTHSTAR run displayed and playback at 2× (flow +

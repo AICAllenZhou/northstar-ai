@@ -5,7 +5,12 @@
 // Advanced command centre, the preset cards, the result and why cards, the run
 // moment, Research, Responsible AI, three failure states, plus (V3) the hero with
 // the coastline at 1440 (hero-coast), the landing scrolled under the glass header
-// (site-scrolled) and a zoomed Kivalliq map detail at demo step 9 (map-detail).
+// (site-scrolled) and a zoomed Kivalliq map detail at demo step 9 (map-detail), plus (V4)
+// the Research story in sections (research-story, research-strips, research-losses,
+// research-solver, research-explorer), the Data provenance table (data-page), the About
+// limitations (about-page), the why card with every candidate aircraft (why-alternatives)
+// and a round trip through "Open in simulator" (research-open-sim) that asserts the
+// generated scenario really loaded and then resets the session.
 //
 //   node scripts/demo_screenshots.mjs            (dev server on :5173, backend on :8000)
 //   BASE_URL=http://localhost:8000 node scripts/demo_screenshots.mjs   (production build served by the backend)
@@ -102,13 +107,13 @@ async function checkNoHorizontalScroll(page, label) {
   if (r.sw > r.iw) problems.push(`${label}: horizontal overflow (scrollWidth ${r.sw}px > viewport ${r.iw}px)`)
 }
 
-async function scrollToSection(page, selector) {
-  const ok = await page.evaluate((sel) => {
+async function scrollToSection(page, selector, offset = 40) {
+  const ok = await page.evaluate(({ sel, offset }) => {
     const el = document.querySelector(sel)
     if (!el) return false
-    window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 40)
+    window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - offset)
     return true
-  }, selector)
+  }, { sel: selector, offset })
   if (!ok) problems.push(`landing: section ${selector} not found`)
   await page.waitForTimeout(600)
 }
@@ -153,10 +158,22 @@ await home.waitForSelector('.ds-table, .data-page .ev-note', { timeout: 30000 })
 await home.waitForTimeout(600)
 await shot(home, 'data', { fullPage: true })
 await checkNoHorizontalScroll(home, 'data 1600')
+// V4: the provenance table (one row per dataset, REAL / DERIVED / SYNTHETIC) at a taller viewport
+await home.setViewportSize({ width: 1600, height: 1300 })
+await home.waitForSelector('.prov-table', { timeout: 30000 })
+await scrollToSection(home, 'section[aria-labelledby="prov-h"]', 96) // clear of the fixed site header
+await shot(home, 'data-page')
+const provRows = await home.locator('.prov-table tbody tr').count()
+if (provRows < 8) problems.push(`data-page: expected at least 8 provenance rows, found ${provRows}`)
 
 await home.goto(url('#/about'))
 await home.waitForSelector('.rai-hero', { timeout: 30000 })
 await home.waitForTimeout(600)
+await scrollToSection(home, '#limitations', 96)
+await shot(home, 'about-page')
+await home.setViewportSize({ width: 1600, height: 1000 })
+await home.evaluate(() => window.scrollTo(0, 0))
+await home.waitForTimeout(400)
 await shot(home, 'about', { fullPage: true })
 await checkNoHorizontalScroll(home, 'about 1600')
 await home.close()
@@ -189,6 +206,75 @@ await waitMarkers(onb)
 await onb.waitForTimeout(600)
 await onb.screenshot({ path: path.join(OUT, 'app-header.png'), clip: { x: 0, y: 0, width: 1600, height: 90 } })
 await onb.close()
+
+// ---- 0c. Research story, section by section, and the "Open in simulator" round trip ------
+// Expected values come from the same API the page reads, so the assertions are data-driven.
+const summary = await (await fetch(`${BASE}/api/experiments/latest`)).json().catch(() => null)
+const pr = await newPage({ width: 1600, height: 1000 }, { label: 'research' })
+await pr.goto(url('#/research'))
+const storyOk = await pr.waitForSelector('.rs-story', { timeout: 60000 }).then(() => true).catch(() => false)
+if (!storyOk) problems.push(`research: the story did not render within 60 s (${(await pr.textContent('.rs-state').catch(() => null)) ?? 'no state card'})`)
+else {
+  await pr.waitForTimeout(900)
+  // The top of the story: question, method diagram and the three headline numbers, in one tall clip.
+  const hl = await pr.locator('#rs-headline').boundingBox()
+  await shot(pr, 'research-story', { fullPage: true, clip: { x: 0, y: 0, width: 1600, height: Math.ceil((hl?.y ?? 0) + (hl?.height ?? 1000) + 24) } })
+  // Element shots scroll the section under the fixed site header; hide the header while taking them.
+  await pr.evaluate(() => { const h = document.querySelector('.site-hdr'); if (h) h.style.visibility = 'hidden' })
+  await pr.locator('#rs-strips').screenshot({ path: path.join(OUT, 'research-strips.png') })
+  await pr.locator('#rs-losses').screenshot({ path: path.join(OUT, 'research-losses.png') })
+  await pr.locator('#rs-solver').screenshot({ path: path.join(OUT, 'research-solver.png') })
+  await pr.evaluate(() => { const h = document.querySelector('.site-hdr'); if (h) h.style.visibility = '' })
+  // Every strip draws one tick per scenario.
+  const ticks = await pr.evaluate(() => [...document.querySelectorAll('.pd-svg')].map((s) => s.querySelectorAll('rect').length - 1))
+  const n = summary?.n_scenarios ?? 100
+  if (ticks.length === 0 || ticks.some((t) => t !== n)) problems.push(`research-strips: expected ${n} ticks per strip, got ${ticks.join(',')}`)
+  // The solver buckets sum to the total.
+  if (!(await pr.$('.solver-legend .sum.ok'))) problems.push('research-solver: the four solver buckets do not sum to the total')
+  // Explorer: sort by the first metric header (worst for NORTHSTAR first) and check the top row is a loss when losses exist.
+  await pr.evaluate(() => document.getElementById('rs-explorer')?.scrollIntoView({ block: 'start' }))
+  await pr.waitForTimeout(300)
+  await pr.click('.rs-table.explorer th .th-sort')
+  await pr.waitForSelector('.rs-table.explorer th.sorted', { timeout: 5000 })
+  const firstKey = 'disconnected_community_hours'
+  const comp = summary?.comparisons?.[summary.primary_policy]?.[firstKey]
+  const topCls = await pr.getAttribute('.rs-table.explorer tbody tr:first-child td.pair', 'class')
+  if (comp && comp.losses > 0 && !/\bloss\b/.test(topCls ?? '')) problems.push(`research-explorer: sorted worst-first but the top row is not a loss (${topCls})`)
+  await pr.evaluate(() => window.scrollTo(0, (document.getElementById('rs-explorer')?.getBoundingClientRect().top ?? 0) + window.scrollY - 40))
+  await pr.waitForTimeout(300)
+  await shot(pr, 'research-explorer')
+  // Open in simulator: the first row of the losses table (or the explorer if there is none) must load that scenario.
+  const btn = (await pr.$('.rs-table.losses .open-sim')) ?? (await pr.$('.rs-table.explorer .open-sim'))
+  const rowId = btn ? await btn.evaluate((b) => b.closest('tr')?.querySelector('td')?.textContent?.trim() ?? '') : ''
+  if (!btn || !rowId) problems.push('research: no "Open in simulator" button found')
+  else {
+    const expected = await (await fetch(`${BASE}/api/experiments/scenarios/${encodeURIComponent(rowId)}`)).json()
+    await btn.scrollIntoViewIfNeeded()
+    await btn.click()
+    await pr.waitForFunction(() => window.location.hash.startsWith('#/simulation'), null, { timeout: 30000 })
+    await pr.waitForSelector('.annunciator', { timeout: 30000 })
+    await pr.waitForFunction((name) => document.querySelector('.scenario-name')?.textContent === name, expected.name, { timeout: 30000 })
+      .catch(() => problems.push(`open-in-simulator: header scenario name did not become "${expected.name}"`))
+    const annState = await pr.textContent('.ann-state')
+    if (annState === 'NORMAL') problems.push('open-in-simulator: network state stayed NORMAL after loading a disrupted scenario')
+    const session = await (await fetch(`${BASE}/api/scenario`)).json()
+    if (session?.scenario?.id !== rowId) problems.push(`open-in-simulator: session scenario is ${session?.scenario?.id}, expected ${rowId}`)
+    if (!(session?.scenario?.disruptions?.length > 0)) problems.push('open-in-simulator: loaded scenario has no disruptions')
+    if (expected.disruptions?.length && session?.scenario?.disruptions?.length !== expected.disruptions.length) problems.push(`open-in-simulator: ${session?.scenario?.disruptions?.length} disruptions loaded, expected ${expected.disruptions.length}`)
+    await waitMarkers(pr)
+    await waitMapIdle(pr)
+    await pr.waitForTimeout(1200)
+    await shot(pr, 'research-open-sim')
+    // Reset through the UI so the session is healthy for the demo flow.
+    await pr.click('.scenario-simple .btn.ghost')
+    await waitIdle(pr)
+    await pr.waitForFunction(() => document.querySelector('.ann-state')?.textContent === 'NORMAL', null, { timeout: 30000 })
+      .catch(() => problems.push('open-in-simulator: Reset did not return the network to NORMAL'))
+    const after = await (await fetch(`${BASE}/api/scenario`)).json()
+    if (after?.scenario?.disruptions?.length) problems.push('open-in-simulator: session still has disruptions after Reset')
+  }
+}
+await pr.close()
 
 // ---- 1. Simple mode, healthy: the preset cards --------------------------------
 const page = await newPage(undefined, { label: 'demo' })
@@ -239,7 +325,7 @@ console.log(`guided demo wall time, step 1 → step 10 (including per-step scree
 // Step 10's button parks the demo on the Research page with a "Back to the demo" toast.
 await page.click('.demo-body .btn.accent')
 await page.waitForSelector('.demo-resume', { timeout: 15000 })
-await page.waitForSelector('.metric-cards, .rs-empty', { timeout: 30000 })
+await page.waitForSelector('.rs-story, .rs-empty', { timeout: 60000 })
 await page.waitForTimeout(800)
 await shot(page, 'research', { fullPage: true })
 await page.click('.demo-resume .btn.accent')
@@ -258,6 +344,24 @@ await page.waitForTimeout(300)
 await page.evaluate(() => document.querySelector('.why-panel')?.scrollIntoView({ block: 'start' }))
 await page.waitForTimeout(300)
 { const clip = await clipTo(page, '.why-panel'); if (clip) await shot(page, 'why-card', { clip }); else problems.push('why-panel not found') }
+// V4: the alternatives expanded into the table of every candidate aircraft with the optimizer's reason.
+if (await page.$('.why-panel .why-alts .link')) {
+  await page.click('.why-panel .why-alts .link')
+  await page.waitForSelector('.why-panel .alts-table', { timeout: 5000 })
+  await page.waitForTimeout(300)
+  const rows = await page.locator('.why-panel .alts-table tbody tr').count()
+  const fleet = (await (await fetch(`${BASE}/api/network`)).json().catch(() => null))?.aircraft?.length ?? 0
+  if (rows === 0) problems.push('why-alternatives: the candidate table is empty')
+  if (fleet && rows !== fleet) problems.push(`why-alternatives: ${rows} rows for a fleet of ${fleet}`)
+  await page.setViewportSize({ width: 1600, height: 1700 })
+  await page.waitForTimeout(500)
+  await page.evaluate(() => document.querySelector('.why-panel')?.scrollIntoView({ block: 'start' }))
+  await page.waitForTimeout(400)
+  const clip = await clipTo(page, '.why-panel'); if (clip) await shot(page, 'why-alternatives', { clip })
+  await page.click('.why-panel .why-alts .link')
+  await page.setViewportSize({ width: 1600, height: 1000 })
+  await page.waitForTimeout(500)
+} else problems.push('why-alternatives: no "Alternatives considered" toggle in the why card')
 
 // ---- 4. The run moment from the panel button (simple mode) -------------------
 await page.evaluate(() => document.querySelector('.cc-right')?.scrollTo(0, 0))

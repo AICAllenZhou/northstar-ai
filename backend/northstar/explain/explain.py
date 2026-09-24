@@ -57,7 +57,11 @@ def explain(network: Network, northstar_trace: Trace, baseline_trace: Trace | No
             "mission_id": mid, "mission_type": o.type.value, "priority": o.priority, "label": o.label,
             "community_id": o.community_id, "status": o.status,
             "aircraft_id": o.aircraft_id, "aircraft_type": network.aircraft[o.aircraft_id].type if o.aircraft_id else None,
+            # Clock times are minutes since 06:00; response_min is the pick-up time, not a duration.
+            # response_after_request_min is the duration a reader usually wants (pick-up minus request).
             "path": o.path, "depart_min": o.depart_min, "response_min": o.response_min, "complete_min": o.complete_min,
+            "release_min": o.release_min,
+            "response_after_request_min": (o.response_min - o.release_min) if o.response_min is not None else None,
             "decided_at_min": ctx["t"] if ctx else None,
             "reasons": [], "alternatives": [], "vs_baseline": None, "tradeoffs": [], "summary": "",
         }

@@ -94,3 +94,21 @@ def test_result_cache_is_transparent_and_identical(client):
     assert b["metrics"] == a["metrics"] and b["assignments"] == a["assignments"]
     h = client.get("/api/health").json(); assert "warmup" in h
     client.post("/api/scenario/reset")
+
+
+def test_decision_record_response_fields_are_consistent(client):
+    """response_min is a clock time (minutes since 06:00); response_after_request_min is the duration and must equal
+    the vs_baseline NORTHSTAR value for completed medevacs. Guards the why-card against reading a clock time as a
+    duration (found in the overnight sprint: the Chesterfield Inlet medevac showed "6h after request" for a 4h response)."""
+    client.post("/api/scenario/load", json={"preset_id": "kivalliq_wildfire"})
+    client.post("/api/run/baseline")
+    client.post("/api/run/northstar", json={"policy_id": "balanced"})
+    recs = client.get("/api/decisions").json()
+    meds = [r for r in recs if r["mission_type"] == "medical" and r["status"] == "completed"]
+    assert meds
+    for r in meds:
+        assert r["release_min"] is not None and r["response_min"] is not None
+        assert r["response_after_request_min"] == r["response_min"] - r["release_min"] >= 0
+        vb = r["vs_baseline"]
+        if vb and vb["metric"] == "response_min" and vb["northstar_value"] is not None:
+            assert vb["northstar_value"] == r["response_after_request_min"]

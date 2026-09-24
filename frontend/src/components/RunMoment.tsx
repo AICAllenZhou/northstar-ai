@@ -5,12 +5,14 @@ import { prefersReducedMotion } from '../lib/prefs'
 import { clock } from '../lib/time'
 import { useStore, type RunMoment as Moment } from '../state/store'
 
+// The optimizer's real phases, in the order NorthstarStrategy.plan() runs them
+// (backend/northstar/strategies/northstar.py): read state → feasibility table → CP-SAT model → solve → the simulator executes and validates the plan.
 const STAGES = [
-  'Analyzing network…',
-  'Checking aircraft availability…',
-  'Evaluating range and runway constraints…',
-  'Prioritizing emergency missions…',
-  'Optimizing resource allocation…',
+  'Reading the network state (closures, aircraft, missions)…',
+  'Building the feasibility table (runway, range, availability, open routes)…',
+  'Building the CP-SAT model (assignments, sequencing, timing, penalties)…',
+  'Solving with OR-Tools CP-SAT…',
+  'Validating the plan in the simulator…',
 ]
 const STAGE_MS = 350      // one stage per ~350 ms while the request is in flight
 const FINISH_MS = 120     // remaining stages after a live solve returns
@@ -80,8 +82,9 @@ function MomentCard({ m }: { m: Moment }) {
 
   const r = m.result
   const ms = r ? (r.compute_ms ?? r.solver?.total_wall_ms ?? null) : null
+  // One truthful line under the stages, stated once: on a cache hit nothing was recomputed now.
   const fact = !r ? null : r.cached
-    ? `Result retrieved: computed by the same engine at start-up${ms !== null ? ` in ${fmtNumber(ms)} ms` : ''}`
+    ? `This scenario was solved at start-up by the same engine${ms !== null ? ` (${fmtNumber(ms)} ms)` : ''}; nothing is recomputed now.`
     : `Solved${ms !== null ? ` in ${fmtNumber(ms)} ms` : ''} · ${r.solver?.calls ?? calls.length} solver calls`
   const seeResult = () => { close(); m.onDone?.() }
   const secs = (shownMs / 1000).toFixed(2)

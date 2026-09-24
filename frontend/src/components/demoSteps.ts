@@ -32,7 +32,7 @@ export const PRIMARY_PRESET = 'kivalliq_wildfire'
 export const BACKUP_PRESETS = ['baffin_blizzard', 'kitikmeot_medevac_failure', 'cargo_shortage', 'cascading_failure']
 
 /** Fixed narrative order for the primary preset. */
-const KIVALLIQ_ORDER: [string, string][] = [['WF-1', 'Wildfire'], ['AF-1', 'Airport closure'], ['ME-1', 'Medical emergency'], ['CG-1', 'Essential cargo']]
+const KIVALLIQ_ORDER: [string, string][] = [['WF-1', 'Wildfire'], ['AF-1', 'Hub closed, aircraft down'], ['ME-1', 'Medical emergency'], ['CG-1', 'Essential cargo']]
 
 const TYPE_TITLE: Record<DisruptionType, string> = {
   wildfire: 'Wildfire', airport_closure: 'Airport closure', severe_weather: 'Severe weather',

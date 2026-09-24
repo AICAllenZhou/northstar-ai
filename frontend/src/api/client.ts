@@ -84,6 +84,8 @@ export const api = {
   compare: () => request<CompareResponse>('/compare'),
   decisions: () => request<DecisionRecord[]>('/decisions'),
   experimentsLatest: () => request<ExperimentSummary>('/experiments/latest'),
+  /** One generated scenario of the committed experiment (experiments/results/scenarios.jsonl), loadable with loadScenario. */
+  experimentScenario: (scenario_id: string) => request<Scenario>(`/experiments/scenarios/${encodeURIComponent(scenario_id)}`),
   /** Natural Earth basemap layer as GeoJSON (the map style loads these by URL; the hero loop draws the coastline from the same data). */
   basemap: (layer: 'countries' | 'provinces' | 'lakes') => request<FeatureCollection>(`/basemap/${layer}`),
 }

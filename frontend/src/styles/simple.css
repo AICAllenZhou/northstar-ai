@@ -132,6 +132,19 @@
 .why-note { color: var(--ink-3); }
 .why-alts { margin-top: 8px; }
 .why-alts .alts { margin-top: 6px; }
+.alts-wrap { margin-top: 8px; overflow-x: auto; }
+.alts-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.alts-table th { font: 500 10px/1.3 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line-2); }
+.alts-table td { padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink-2); line-height: 1.35; }
+.alts-table th.num, .alts-table td.num { text-align: right; white-space: nowrap; }
+.alts-table td:first-child { white-space: nowrap; color: var(--ink); }
+.alts-table .alt-type { display: block; font-size: 10.5px; color: var(--ink-3); font-weight: 400; }
+.alts-table tr.chosen td { color: var(--ink); background: var(--ns-dim); }
+.alts-table .chip { font-size: 9.5px; padding: 1px 6px; }
+.chip.verdict-chosen { color: var(--ns); border-color: var(--ns); }
+.chip.verdict-failed, .chip.verdict-stranded { color: var(--ink-3); border-color: var(--line-2); }
+.chip.verdict-absent { color: var(--ink-3); border-color: var(--line-2); border-style: dashed; }
+.alts-foot { margin-top: 6px; font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.02em; }
 .why-vs { margin-top: 8px; color: var(--ink); }
 .why-trade { margin-top: 6px; color: #ffb3b3; }
 .why-foot { margin-top: 10px; font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.02em; }

@@ -251,3 +251,103 @@ is less theatrical (deliberate: the map is the show).
 7. `scripts/demo.sh` runs the smoke test against the shared session at start-up, so the first screen a presenter sees is the loaded primary preset, not the healthy network (V5).
 
 **Commit:** 40a7f6f
+
+## Version 4 — "Make it credible"
+
+**Observed problems (from V3):** the Research page was a dashboard, not an argument: a
+1440 px grid inside the 1200 px site, five bar cards, one win/loss chart, a per-scenario table,
+and a "Solver" line that said "2,438 CP-SAT calls · 2,284 proven optimal" and left 154 calls
+unexplained. Losses were countable but not visible per scenario. The Data page listed sidecars
+without saying what each dataset is for or what was deliberately not done; the About page had
+the Responsible AI statement but no limitations or "distance to reality". In the command centre
+the five RUN stage labels were the brief's wording rather than the optimizer's phases, step 3
+was titled "Airport closure" for an aircraft-failure event, and "Alternatives considered"
+showed counts without the rejected aircraft.
+
+**Decisions:** the Research page tells the study in the order a reviewer asks questions:
+question → method (five nodes) → three headline numbers chosen by a stated rule (largest
+wins-minus-losses margin among the resilience metrics; the rule and the runners-up are printed,
+and the first hypothesis, medical response with 69 ties, is named as *not* a headline) → one
+paired-difference strip per metric with all 100 scenarios as ticks, losses in the warm colour,
+own symmetric scale, median marker → "Where NORTHSTAR loses" with the reroute trade-off
+explained (it re-plans at every event; each change costs 600 in the balanced objective) and the
+two scenarios where it was worse on disconnected-community hours, each with **Open in
+simulator** (the generated scenario loads into the command centre and the run buttons solve it
+live) → censoring → policy sensitivity with a data-driven sentence about the metric that moves
+most between profiles → solver honesty as one stacked bar whose legend states the sum →
+a sortable, filterable explorer of all 100 rows → a reproduce block (command, seed, commit,
+OR-Tools, platform, CSV). Every number is read from the API; the report carries a source-field
+audit for every number in two of the shots. The strips recompute wins/losses/ties client-side
+with the runner's tie tolerance and reproduce the API's counts for all ten metrics.
+
+The solver accounting defect found during V3 was fixed before this page was built: the runner
+now buckets every replanning decision (2,284 CP-SAT solves, all proven optimal; 0 feasible-not-
+optimal; 0 time-outs; 154 decisions at which no usable aircraft could reach any pending mission,
+answered as NO FEASIBLE SOLUTION without a solve), a regression test guards the arithmetic and
+the committed summary, the methodology §7 explains it, and the experiment was re-run at commit
+5f0d9ab: 500 runs, zero trace-hash differences, zero changed metric cells (commits 5f0d9ab,
+a8ede20).
+
+Two things checked by hand while reviewing the pass. (1) The agent flagged a 0-minute NORTHSTAR
+medical response in gen-42-000. Traced: AC-09 (PC-12 medevac) flew cargo request CGO-01 from
+Cambridge Bay to Taloyoak at 06:30 and was still on the ground there when the medevac was called
+at 17:00 from Taloyoak; missions become visible only at their call time (`known_min`), so this is
+positioning luck, not foresight. Baseline used AC-06 from Cambridge Bay (60 min). No change.
+(2) The why-card's new alternatives table printed "chosen · response 6h after request" for the
+Chesterfield Inlet medevac while the checklist said 4 h. The decision record's `response_min` is
+a clock time (minutes since 06:00; 360 = 12:00), and the frontend read it as a duration. Fixed:
+the record now also carries `release_min` and `response_after_request_min`; the why-card uses
+the duration and prints the pick-up clock time beside it; `test_decision_record_response_fields_
+are_consistent` asserts the duration equals the `vs_baseline` value for every completed medevac.
+Explanations are computed at request time and are not part of `experiments/results/`, so no
+re-run was needed.
+
+**Implementation:** `frontend/src/views/Research.tsx` (rewritten), `views/research/{Charts.tsx
+(plain-SVG DiffStrip, WltBar, SolverBar), Explorer.tsx, paired.ts}`, `styles/research.css`
+(1200 px), `api/{types,client}.ts` (`experimentScenario`, optional solver fields, decision
+record fields), `state/store.ts` (`openExperimentScenario`), `site/{DataPage,AboutPage,copy}`,
+`styles/site.css`; `components/{RunMoment (real phases, single cache sentence), WhyCard
+(alternatives table, duration fix), demoSteps ("Hub closed, aircraft down")}`; backend
+`northstar/explain/explain.py` (+2 fields), `tests/test_api.py` (+1 test); driver (+9 shots incl.
+`research-open-sim` proving the round trip, and a reset so the demo that follows starts healthy).
+Recharts is no longer imported (the dependency stays in `package.json`), which is why the bundle
+dropped from 1.80 MB to 1.47 MB.
+
+**Test results:** backend `uv run pytest` 41 passed (38 original + 2 solver-bucket tests + 1
+decision-record consistency test); `npm run build` 0 errors (JS 1,470.86 kB / 412 kB gzip, down
+from 1,800 kB because Recharts is no longer imported; CSS 183 kB); `oxlint` 0 warnings; screenshot
+driver after the server restart: no external requests, no page or console errors, no horizontal
+overflow at 390 / 768 / 1024 / 1440 / 1600 px, guided demo step 1 → 10 in 22.2 s (≈19 s of
+screenshot pauses), the open-in-simulator round trip asserted (hash, header name, disruption
+count from `/api/experiments/scenarios/{id}` equal to `/api/scenario`), session reset to the
+healthy network afterwards. The agent's numbers audit maps every figure in `research-story.png`
+and `research-losses.png` to a `summary.json` field. Experiment: re-run at 5f0d9ab, 500 runs,
+0 trace-hash differences, 0 changed metric cells; `summary.json` `git_dirty: false`.
+
+**Visual review (as a judge):** the Research page now reads like a paper's results section: the question, the
+"what would count as an answer" line, a mono meta line with n, seed, policy, commit and OR-Tools
+version, a five-node method diagram, three headline cards that print their own selection rule
+and name the runner-up metrics and the ties on medical response. The strips are the honest
+centrepiece: a hundred ticks per metric, the two disconnected-hours losses and the sixty-five
+reroute losses in warm orange, medians marked, extremes labelled in words. "Where NORTHSTAR
+loses" names the two scenarios and lets a judge open either one in the simulator and re-run it
+live. The solver block's stacked bar visibly sums to 2,438 and explains the 154 no-feasible
+decisions in a sentence. Data and About pages carry provenance badges, the not-done list,
+limitations and distance-to-reality. In the command centre the RUN stages now name the real
+phases and the cache sentence is one line; step 3 reads "Hub closed, aircraft down"; the why-card
+lists all ten aircraft with the optimizer's verdict and reason, chosen row "response 4h after
+request (pick-up 12:00)". Weak spots: the raw generator description ("1 closure(s), 2 weather
+event(s)…") shows in the header and scenario panel when a generated scenario is opened; the
+explorer's "Headline 5" default hides the reroute column, which is where the losses are (the
+strips above cover it, but a judge scanning the table will not see a loss column by default).
+
+**What still needs improvement:**
+1. Humanize the generated-scenario description ("1 closure(s), 2 weather event(s)…") in the header and scenario panel when a scenario is opened from the Research page (V5 copy).
+2. Explorer default columns: include reroutes (the trade-off metric) in the default view or label the toggle "Resilience 5 / All 10" so losses are one click away, not hidden (V5).
+3. Label and marker collisions at hubs (Cambridge Bay, Rankin Inlet cluster) and the legend covering Sanikiluaq at 1600 px (carried from V3; V5 declutter + collapsible legend).
+4. The 1280–1439 px three-column layout with the docked demo card is still not screenshot-verified; add a 1280 shot to the driver (V5).
+5. Keyboard and screen-reader pass across the site and the command centre (focus order in the docked card, `aria-live` volume, contrast of the ice-blue mono captions) (V5).
+6. Cold-start acceptance from a fresh clone (`uv sync`, `npm ci`, build, `scripts/demo.sh`, driver) and the `--verify` gate on a quiet CPU (V5).
+7. README, readiness checklist and the final product review still describe V0 in places (V5 docs).
+
+**Commit:** _pending_
