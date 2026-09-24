@@ -487,4 +487,4 @@ Nothing else moved.
 2. Flying aircraft still cross hub labels by nature; the labels sit above them and stay legible, but a purist would route the icons around.
 3. Warm-up now takes longer (30 computations instead of 15: 37 s on the development machine instead of about 10 s); the launcher waits and prints the time, and the demo script says not to start before "ready".
 
-**Commit:** _pending_
+**Commit:** 8cec3dd

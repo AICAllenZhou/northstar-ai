@@ -175,6 +175,6 @@ build, a screenshot set, a judge-style critique and a commit hash
 | — | Experiment runner: four solver buckets; results re-run at 5f0d9ab (0 hash differences); regression tests | 5f0d9ab, a8ede20 |
 | V4 | Make it credible: Research page as a story, per-scenario strips, open-in-simulator, solver accounting, Data/About depth, decision-record fix | e16f190 |
 | V5 | Make it competition-ready: declutter, accessibility floor, 1280 px check, cold-start acceptance, docs | af5a6f0 |
-| V6 | Stage hardening: every policy profile precomputed, Advanced locked during the demo, keyboard mission rows, parked-aircraft spacing, legend placement on narrow layouts | {{V6_COMMIT}} |
+| V6 | Stage hardening: every policy profile precomputed, Advanced locked during the demo, keyboard mission rows, parked-aircraft spacing, legend placement on narrow layouts | 8cec3dd |
 
-Final branch: `waicy-overnight-polish`. Final commit: af5a6f0 (V5); the small commit after it records this hash in the log and this document, and is the branch tip.
+Final branch: `waicy-overnight-polish`. Final code commit: 8cec3dd (V6); the small commit after it records this hash in the log and this document and is the branch tip.
