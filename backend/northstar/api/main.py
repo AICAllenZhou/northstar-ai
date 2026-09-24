@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 import uuid
 from pathlib import Path
@@ -35,6 +36,8 @@ def session() -> Session:
     if _session is None:
         try:
             _session = Session()
+            if os.environ.get("NORTHSTAR_WARMUP", "1") != "0":
+                _session.warm_up()
         except DatasetError as e:
             _session_error = str(e)
             raise HTTPException(status_code=503, detail={"error": "datasets missing", "detail": str(e)})
@@ -60,7 +63,8 @@ def health():
     except HTTPException:
         ok = False
     return {"status": "ok" if ok else "degraded", "version": VERSION, "datasets_loaded": ok,
-            "ortools_version": ortools.__version__, "offline": True, "dataset_error": _session_error}
+            "ortools_version": ortools.__version__, "offline": True, "dataset_error": _session_error,
+            "warmup": s.warmup if ok else None}
 
 
 @app.get("/api/network")
@@ -96,6 +100,16 @@ def basemap(layer: str):
 @app.get("/api/presets")
 def presets():
     return list_presets()
+
+
+@app.get("/api/presets/{preset_id}")
+def preset_detail(preset_id: str):
+    """Full preset definition (disruptions in start order) so a guided demo can introduce them one at a time."""
+    from northstar.scenarios.presets import get_preset
+    sc = get_preset(preset_id)
+    out = sc.model_dump()
+    out["disruptions"] = sorted(out["disruptions"], key=lambda d: (d["start_min"], d["id"]))
+    return out
 
 
 @app.get("/api/policies")
@@ -212,6 +226,7 @@ def _run_result(s: Session, name: str) -> dict:
                   "policy": r["policy"].id if r.get("policy") else None}
     return {
         "strategy": name, "status": trace.status, "metrics": m.model_dump(), "assignments": assignments,
+        "cached": bool(r.get("cached")), "compute_ms": r.get("compute_ms"), "computed_at": r.get("computed_at"),
         "trace": {"step_min": trace.step_min, "horizon_min": trace.horizon_min,
                   "snapshots": [sn.model_dump() for sn in trace.snapshots],
                   "legs": [l.model_dump() for l in trace.legs]},
@@ -299,6 +314,20 @@ def experiments_csv():
     if not p.exists():
         raise HTTPException(404, detail={"error": "no experiment results", "detail": str(p)})
     return FileResponse(p, media_type="text/csv", filename="results.csv")
+
+
+@app.get("/api/experiments/scenarios/{scenario_id}")
+def experiment_scenario(scenario_id: str):
+    """One generated scenario from the committed experiment, so a judge can load and inspect it live."""
+    p = RESULTS_DIR / "scenarios.jsonl"
+    if not p.exists():
+        raise HTTPException(404, detail={"error": "no experiment results", "detail": str(p)})
+    with open(p, encoding="utf-8") as f:
+        for line in f:
+            sc = json.loads(line)
+            if sc.get("id") == scenario_id:
+                return sc
+    raise HTTPException(404, detail={"error": "unknown scenario", "detail": scenario_id})
 
 
 @app.post("/api/experiments/run")

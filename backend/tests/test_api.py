@@ -67,3 +67,30 @@ def test_no_feasible_solution_surfaces(client):
     d = client.get("/api/decisions").json()
     assert any(r["status"] == "unserved" and r["reasons"] for r in d)
     client.post("/api/scenario/reset")
+
+
+def test_preset_detail_and_experiment_scenario_loading(client):
+    r = client.get("/api/presets/kivalliq_wildfire"); assert r.status_code == 200
+    d = r.json(); assert [x["id"] for x in d["disruptions"]] == ["AF-1", "WF-1", "ME-1", "CG-1"]  # start order
+    assert client.get("/api/presets/nope").status_code == 404
+    r = client.get("/api/experiments/scenarios/gen-42-001")
+    if r.status_code == 200:
+        sc = r.json(); assert sc["id"] == "gen-42-001"
+        r2 = client.post("/api/scenario/load", json={"scenario": sc}); assert r2.status_code == 200
+        assert r2.json()["scenario"]["id"] == "gen-42-001"
+    else:
+        assert r.status_code == 404
+    client.post("/api/scenario/reset")
+
+
+def test_result_cache_is_transparent_and_identical(client):
+    client.post("/api/scenario/load", json={"preset_id": "baffin_blizzard"})
+    a = client.post("/api/run/northstar", json={"policy_id": "balanced"}).json()
+    assert a["cached"] is False and a["compute_ms"] is not None
+    client.post("/api/scenario/load", json={"preset_id": "healthy"})
+    client.post("/api/scenario/load", json={"preset_id": "baffin_blizzard"})
+    b = client.post("/api/run/northstar", json={"policy_id": "balanced"}).json()
+    assert b["cached"] is True
+    assert b["metrics"] == a["metrics"] and b["assignments"] == a["assignments"]
+    h = client.get("/api/health").json(); assert "warmup" in h
+    client.post("/api/scenario/reset")
