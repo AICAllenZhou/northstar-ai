@@ -75,6 +75,8 @@ export interface StoreState {
 }
 
 let errorSeq = 1
+/** For fire-and-forget calls: errors are already reported through the store. */
+const quiet = (p: Promise<unknown>) => { p.catch(() => undefined) }
 
 export const useStore = create<StoreState>()((set, get) => {
   function handleError(e: unknown, retry?: () => void) {
@@ -154,10 +156,13 @@ export const useStore = create<StoreState>()((set, get) => {
         applyScenario(scenario)
         set({ ready: true })
         // Restore runs that the backend session already holds (e.g. after a browser reload).
-        if (scenario.has_do_nothing) await get().fetchImpact(false)
-        if (scenario.has_baseline) await get().runBaseline()
-        if (scenario.has_northstar) await get().runNorthstar(scenario.policy_id)
-      }, () => { void get().bootstrap() })
+        // Each step is skipped if the user has already moved to another scenario.
+        try {
+          if (scenario.has_do_nothing && get().scenario === scenario) await get().fetchImpact(false)
+          if (scenario.has_baseline && get().scenario === scenario) await get().runBaseline()
+          if (scenario.has_northstar && get().scenario === scenario) await get().runNorthstar(scenario.policy_id)
+        } catch { /* reported by guarded(); the healthy part of the state is kept */ }
+      }, () => quiet(get().bootstrap()))
     },
 
     pollHealth: async () => {
@@ -165,19 +170,19 @@ export const useStore = create<StoreState>()((set, get) => {
         const health = await api.health()
         const wasDown = get().connection !== 'ok'
         set({ health, connection: 'ok', datasetError: health.datasets_loaded ? null : (health.dataset_error ?? 'datasets not loaded') })
-        if (wasDown && !get().ready && health.datasets_loaded) void get().bootstrap()
+        if (wasDown && !get().ready && health.datasets_loaded) quiet(get().bootstrap())
       } catch (e) {
         if (e instanceof ApiError && e.unreachable) set({ connection: 'down' })
       }
     },
 
     loadPreset: async (id) => {
-      const st = await guarded('load', () => api.loadPreset(id), () => { void get().loadPreset(id) })
+      const st = await guarded('load', () => api.loadPreset(id), () => quiet(get().loadPreset(id)))
       applyScenario(st)
     },
 
     resetScenario: async () => {
-      const st = await guarded('reset', () => api.reset(), () => { void get().resetScenario() })
+      const st = await guarded('reset', () => api.reset(), () => quiet(get().resetScenario()))
       applyScenario(st)
     },
 
@@ -193,7 +198,9 @@ export const useStore = create<StoreState>()((set, get) => {
 
     fetchImpact: async (display = true) => {
       const existing = get().impact
-      const impact = existing ?? await guarded('impact', () => api.impact(), () => { void get().fetchImpact(display) })
+      const sc = get().scenario
+      const impact = existing ?? await guarded('impact', () => api.impact(), () => quiet(get().fetchImpact(display)))
+      if (get().scenario !== sc) return impact // scenario changed meanwhile: discard
       set((s) => ({ impact, runs: { ...s.runs, do_nothing: impact.do_nothing } }))
       if (display) set({ displayedRun: 'do_nothing', t: impact.peak_disconnected_t, playing: false })
       await get().refreshCompare()
@@ -201,8 +208,10 @@ export const useStore = create<StoreState>()((set, get) => {
     },
 
     runBaseline: async () => {
+      const sc = get().scenario
       if (!get().impact) await get().fetchImpact(false)
-      const run = await guarded('baseline', () => api.runBaseline(), () => { void get().runBaseline() })
+      const run = await guarded('baseline', () => api.runBaseline(), () => quiet(get().runBaseline()))
+      if (get().scenario !== sc) return run
       set((s) => ({ runs: { ...s.runs, baseline: run }, displayedRun: 'baseline', t: 0, playing: false }))
       await get().refreshCompare()
       return run
@@ -210,9 +219,11 @@ export const useStore = create<StoreState>()((set, get) => {
 
     runNorthstar: async (policyId) => {
       const pid = policyId ?? get().policyId
+      const sc = get().scenario
       if (!get().impact) await get().fetchImpact(false)
       if (!get().runs.baseline) await get().runBaseline()
-      const run = await guarded('northstar', () => api.runNorthstar(pid), () => { void get().runNorthstar(pid) })
+      const run = await guarded('northstar', () => api.runNorthstar(pid), () => quiet(get().runNorthstar(pid)))
+      if (get().scenario !== sc) return run
       let decisions = run.decisions ?? []
       if (!run.decisions) {
         try { decisions = await api.decisions() } catch { decisions = [] }
@@ -223,9 +234,10 @@ export const useStore = create<StoreState>()((set, get) => {
     },
 
     refreshCompare: async () => {
+      const sc = get().scenario
       try {
         const compare = await api.compare()
-        set({ compare })
+        if (get().scenario === sc) set({ compare })
       } catch (e) {
         handleError(e)
       }
@@ -243,7 +255,7 @@ export const useStore = create<StoreState>()((set, get) => {
     },
 
     setDisplayedRun: (r) => {
-      if (r === 'do_nothing' && !get().impact) { void get().fetchImpact(true); return }
+      if (r === 'do_nothing' && !get().impact) { quiet(get().fetchImpact(true)); return }
       set({ displayedRun: r, playing: false })
     },
     setTime: (t) => set({ t: Math.max(0, Math.min(1440, t)) }),

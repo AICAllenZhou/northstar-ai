@@ -1,22 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '../state/store'
 import { BACKUP_PRESETS, DEMO_STEPS, PRIMARY_PRESET } from './demoSteps'
 
 export function DemoStepper({ onExit }: { onExit: () => void }) {
   const [step, setStep] = useState(-1)
   const [preset, setPreset] = useState(PRIMARY_PRESET)
+  const presetRef = useRef(PRIMARY_PRESET)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const state = useStore()
   const presets = useStore((s) => s.presets)
   const connection = useStore((s) => s.connection)
+  const view = useStore((s) => s.view)
 
-  const go = useCallback(async (i: number, presetId = preset) => {
+  const go = useCallback(async (i: number) => {
     if (i < 0 || i >= DEMO_STEPS.length) return
     setRunning(true)
     setError(null)
     try {
-      await DEMO_STEPS[i].run(presetId)
+      await DEMO_STEPS[i].run(presetRef.current)
       setStep(i)
     } catch (e) {
       setStep(i)
@@ -24,9 +26,13 @@ export function DemoStepper({ onExit }: { onExit: () => void }) {
     } finally {
       setRunning(false)
     }
-  }, [preset])
+  }, [])
 
-  useEffect(() => { void go(0) }, [go])
+  // Start on the first step once mounted (deferred so no state is set synchronously in the effect).
+  useEffect(() => {
+    const id = setTimeout(() => { void go(0) }, 0)
+    return () => clearTimeout(id)
+  }, [go])
 
   const current = step >= 0 ? DEMO_STEPS[step] : null
   const caption = current ? current.caption(state) : 'Starting the demo…'
@@ -34,7 +40,7 @@ export function DemoStepper({ onExit }: { onExit: () => void }) {
   const exit = () => { useStore.getState().pause(); useStore.getState().setFocusPanel(null); onExit() }
 
   return (
-    <div className="demo" role="dialog" aria-label="Demo mode" aria-live="polite">
+    <div className={`demo ${view === 'command' ? 'over-map' : 'over-page'}`} role="dialog" aria-label="Demo mode" aria-live="polite">
       <div className="demo-card">
         <div className="demo-top">
           <div className="demo-steps" aria-hidden>
@@ -44,7 +50,7 @@ export function DemoStepper({ onExit }: { onExit: () => void }) {
             <span className="eyebrow">Demo mode · step {Math.max(1, step + 1)} of {DEMO_STEPS.length}</span>
             <label className="demo-preset">
               <span className="eyebrow">Preset</span>
-              <select className="input" value={preset} disabled={running} onChange={(e) => { setPreset(e.target.value); void go(1, e.target.value) }}>
+              <select className="input" value={preset} disabled={running} onChange={(e) => { presetRef.current = e.target.value; setPreset(e.target.value); void go(1) }}>
                 <option value={PRIMARY_PRESET}>{presets.find((p) => p.id === PRIMARY_PRESET)?.name ?? PRIMARY_PRESET} (primary)</option>
                 {BACKUP_PRESETS.map((id) => <option key={id} value={id}>{presets.find((p) => p.id === id)?.name ?? id}</option>)}
               </select>

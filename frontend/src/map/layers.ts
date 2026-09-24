@@ -20,7 +20,7 @@ export function addOverlayLayers(map: MlMap): void {
   })
   map.addLayer({
     id: 'disruptions-line', type: 'line', source: 'disruptions',
-    paint: { 'line-color': ['get', 'color'], 'line-width': 1.2, 'line-opacity': ['*', 2.2, ['get', 'opacity']], 'line-dasharray': [3, 2] },
+    paint: { 'line-color': ['get', 'color'], 'line-width': 1.2, 'line-opacity': ['get', 'lineOpacity'], 'line-dasharray': [3, 2] },
   })
   map.addLayer({
     id: 'routes-open', type: 'line', source: 'routes', filter: ['!=', ['get', 'state'], 'closed'],
@@ -138,12 +138,13 @@ export function updateOverlays(map: MlMap, inp: OverlayInput): void {
     if (e.type !== 'wildfire' && e.type !== 'severe_weather') continue
     const active = e.start_min <= inp.t && inp.t < e.end_min
     const color = e.type === 'wildfire' ? MAP_COLORS.wildfire : MAP_COLORS.weather
-    const opacity = active ? 0.26 : 0.07
+    const opacity = active ? 0.26 : 0.09
+    const lineOpacity = active ? 0.9 : 0.5
     const centres: [LngLat, number][] = []
     if (e.center && e.radius_km) centres.push([[e.center[1], e.center[0]], e.radius_km])
     else for (const id of e.target_ids) { const p = ll(id); if (p) centres.push([p, e.radius_km ?? 45]) }
     for (const [c, r] of centres) {
-      disr.push({ type: 'Feature', properties: { id: e.id, kind: e.type, color, opacity, active }, geometry: { type: 'Polygon', coordinates: [circlePolygon(c, r)] } })
+      disr.push({ type: 'Feature', properties: { id: e.id, kind: e.type, color, opacity, lineOpacity, active }, geometry: { type: 'Polygon', coordinates: [circlePolygon(c, r)] } })
     }
   }
   setData(map, 'disruptions', { type: 'FeatureCollection', features: disr })

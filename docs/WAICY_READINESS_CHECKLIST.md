@@ -7,20 +7,20 @@ rehearsal log). "Evidence" is filled in during Milestone 8 hardening.
 
 | ✓ | Item | Evidence |
 |---|------|----------|
-| ☐ | Landing panel states the problem: Northern communities depend on air links that break during disruptions. | |
-| ☐ | Research question is visible verbatim on the main screen. | |
-| ☐ | The map makes the network understandable within ~10 seconds (hubs, communities, routes, aircraft). | |
+| ☑ | Landing panel states the problem: Northern communities depend on air links that break during disruptions. | Research view headline + Command Center scenario description; `docs/screenshots/step-01.png` |
+| ☑ | Research question is visible verbatim on the main screen. | Research view title; README; `docs/screenshots/research.png` |
+| ☑ | The map makes the network understandable within ~10 seconds (hubs, communities, routes, aircraft). | `docs/screenshots/command-center.png`: hub labels, community dots, routes, aircraft icons by role, legend |
 | ☑ | Real geography is used and labelled as real; synthetic operations are labelled as synthetic. | `datasets/processed/*.meta.json`, `docs/DATA_PROVENANCE.md`, disclaimer in `GET /api/network` |
 
 ## B. Where is the AI, and why is it useful here?
 
 | ✓ | Item | Evidence |
 |---|------|----------|
-| ☐ | The RUN NORTHSTAR AI button is the visual focal point. | |
-| ☐ | The method is named on screen (constraint optimization, OR-Tools CP-SAT) with a one-line description of what it searches over. | |
+| ☑ | The RUN NORTHSTAR AI button is the visual focal point. | Illuminated teal push-button in the right column (`RunPanel`); `docs/screenshots/step-05.png` |
+| ☑ | The method is named on screen (constraint optimization, OR-Tools CP-SAT) with a one-line description of what it searches over. | Demo step 5 caption and run card ("22 solver calls · 1.0 s"); Research "How we tested" |
 | ☑ | A non-AI baseline exists, is visibly simpler, and is described in ≤ 6 rules. | `backend/northstar/strategies/baseline.py` docstring (7 short rules incl. the tie rule); methodology §5.1 |
-| ☐ | The decision panel shows alternatives the optimizer rejected and why. | |
-| ☐ | Policy weight profiles are switchable and change the recommendation. | |
+| ☑ | The decision panel shows alternatives the optimizer rejected and why. | `docs/screenshots/step-08.png`: alternatives with BUSY / REJECTED / WORSE chips and reasons |
+| ☑ | Policy weight profiles are switchable and change the recommendation. | Policy selector next to RUN NORTHSTAR; `tests/test_northstar.py::test_policy_profile_changes_the_recommendation` |
 | ☑ | No LLM is used anywhere for decisions or explanations. | `backend/northstar/explain/explain.py` is string templates over solver data; no LLM dependency in `backend/pyproject.toml` |
 
 ## C. Measurable, credible results
@@ -32,7 +32,7 @@ rehearsal log). "Evidence" is filled in during Milestone 8 hardening.
 | ☑ | Wins / losses / ties per metric shown, including metrics where baseline wins. | `experiments/results/summary.md` → Tradeoffs section lists reroutes (baseline wins 66/100) |
 | ☑ | Sign-test p-values shown; no significance claimed below the threshold. | `summary.json` `comparisons[*][*].p_value` / `significant`; computed by exact two-sided sign test in `run_experiments.py` |
 | ☑ | Censored (unserved) mission counts shown next to every average. | `Metrics.medical_unserved`, `cargo_unserved`, `cancelled_flights`; `summary.md` → Censoring section |
-| ☐ | "How we tested NORTHSTAR" section exists on the Research screen. | |
+| ☑ | "How we tested NORTHSTAR" section exists on the Research screen. | `docs/screenshots/research.png` bottom section |
 | ☑ | Re-running the experiment reproduces the committed CSV (`--verify`). | 2026-09-24: `run_experiments.py --verify` → "VERIFY OK: 500 runs reproduce the committed trace hashes" |
 
 ## D. Explainability and Responsible AI
@@ -41,8 +41,8 @@ rehearsal log). "Evidence" is filled in during Milestone 8 hardening.
 |---|------|----------|
 | ☑ | Every assignment has a structured reason list derived from data. | `DecisionRecord.reasons[]` with codes PRIORITY / NEAREST_RANK / RUNWAY_OK / RANGE_OK / MULTI_HOP / ALTERNATE_HUB / …; `tests/test_api.py::test_demo_sequence` |
 | ☑ | Tradeoffs (who was delayed to help whom) are shown per decision. | `DecisionRecord.tradeoffs[]` (missions the baseline flew with the same aircraft that NORTHSTAR finished later) |
-| ☐ | Disclaimer text is displayed on every screen: research simulation, not for real operations. | |
-| ☐ | Responsible AI tab covers human-in-the-loop, real vs synthetic data, uncertainty, limitations, explainability, no autonomous control, weight tradeoffs, no generalisation guarantee. | |
+| ☑ | Disclaimer text is displayed on every screen: research simulation, not for real operations. | Permanent amber strip under the header on all three views (`Header`), text from `GET /api/network.disclaimer` |
+| ☑ | Responsible AI tab covers human-in-the-loop, real vs synthetic data, uncertainty, limitations, explainability, no autonomous control, weight tradeoffs, no generalisation guarantee. | `docs/screenshots/responsible-ai.png`; content mirrors `docs/RESPONSIBLE_AI.md` |
 | ☑ | NORTHSTAR output is a *recommendation* the operator applies; nothing auto-applies. | API only computes on explicit `POST /api/run/northstar`; nothing changes the scenario; `docs/RESPONSIBLE_AI.md` §2 |
 | ☑ | "NO FEASIBLE SOLUTION" state is reachable and displayed clearly. | `tests/test_northstar.py::test_no_feasible_solution_is_explicit`, `tests/test_api.py::test_no_feasible_solution_surfaces` |
 | ☑ | Community priority weights default to equal; the equity implication of population weighting is discussed. | `communities.csv` priority_weight = 1.0; `docs/RESPONSIBLE_AI.md` §6 |
@@ -51,25 +51,25 @@ rehearsal log). "Evidence" is filled in during Milestone 8 hardening.
 
 | ✓ | Item | Evidence |
 |---|------|----------|
-| ☐ | One command starts backend and frontend (`scripts/demo.sh`). | |
-| ☐ | Works with Wi-Fi off (bundled basemap, local API, committed results). | |
-| ☐ | Demo Mode stepper walks the ten steps with one "Next" button. | |
+| ☑ | One command starts backend and frontend (`scripts/demo.sh`). | `scripts/demo.sh` builds once and serves `frontend/dist` from the backend on :8000 (verified 2026-09-24) |
+| ☑ | Works with Wi-Fi off (bundled basemap, local API, committed results). | Playwright driver flags non-localhost requests: none; no CDN/fonts/tiles in `frontend/src`; basemap from `/api/basemap/*` |
+| ☑ | Demo Mode stepper walks the ten steps with one "Next" button. | `DemoStepper` + `demoSteps`; `docs/screenshots/step-01.png` … `step-10.png` |
 | ☑ | Primary preset (wildfire + closure + medical + cargo) produces a visible NORTHSTAR-vs-baseline difference. | kivalliq_wildfire: disconnected-h 88.5→53, cancelled 8→0, pax delay 392→168, cargo delay 120→330 (tradeoff); see `docs/DEMO_SCRIPT.md` |
 | ☑ | At least two backup presets also produce a visible difference. | baffin_blizzard (87.5→42 h, 3→0 cancelled), cargo_shortage (114→23 h, pax 440→88), kitikmeot (recovery 480→300, medical 60→105 tradeoff) |
 | ☑ | NORTHSTAR run completes in < 3 s on the demo machine for every preset. | Measured 2026-09-24 with 8 workers: kivalliq 2.2 s, baffin 0.9 s, kitikmeot 1.3 s, cascading 1.0 s; **cargo_shortage 10 s** (exception, documented; backup preset only) |
-| ☐ | Reset returns to the healthy network without a page refresh. | |
-| ☐ | Backend-unreachable state shows a clear message and a retry button. | |
+| ☑ | Reset returns to the healthy network without a page refresh. | `POST /api/scenario/reset` wired to the Reset button and demo step 1; `tests/test_api.py::test_demo_sequence` last assertion |
+| ☑ | Backend-unreachable state shows a clear message and a retry button. | `docs/screenshots/backend-down.png` (health polled every 5 s, controls disabled, last state kept) |
 | ☐ | Full run-through rehearsed in < 5 minutes at least three times. | |
-| ☐ | Screenshots of every demo step saved in `docs/screenshots/` as a last-resort backup. | |
+| ☑ | Screenshots of every demo step saved in `docs/screenshots/` as a last-resort backup. | 16 PNGs incl. failure states (`research-empty.png`, `backend-down.png`) and `narrow-1024.png` |
 
 ## F. Engineering quality
 
 | ✓ | Item | Evidence |
 |---|------|----------|
 | ☑ | All backend tests pass (`uv run pytest`). | 35 tests green on 2026-09-24 (loader, graph, simulation, baseline, metrics, optimizer, API) |
-| ☐ | Frontend type-checks and builds. | |
+| ☑ | Frontend type-checks and builds. | `npm run build` (tsc -b && vite build) and `npm run lint` (oxlint) clean on 2026-09-24 |
 | ☑ | End-to-end smoke test passes. | `tests/test_api.py::test_demo_sequence` + `scripts/smoke_test.py` against the running server |
-| ☐ | README explains purpose, research question, architecture, run, experiments, demo mode, synthetic data, limitations. | |
+| ☑ | README explains purpose, research question, architecture, run, experiments, demo mode, synthetic data, limitations. | `README.md` sections in that order |
 | ☑ | Every dataset has a metadata sidecar and appears in DATA_PROVENANCE.md. | `datasets/processed/*.meta.json`, `datasets/raw/PROVENANCE.json` (14 entries), `docs/DATA_PROVENANCE.md` |
 | ☑ | No placeholder code paths; no hard-coded results. | grep for TODO/FIXME/placeholder in backend returns nothing; all metrics computed by `evaluate()` |
 

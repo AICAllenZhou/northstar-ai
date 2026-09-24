@@ -9,7 +9,7 @@ export function ErrorBanner() {
   const pollHealth = useStore((s) => s.pollHealth)
   const ready = useStore((s) => s.ready)
   const bootstrap = useStore((s) => s.bootstrap)
-  const retry = () => { void pollHealth().then(() => { if (!useStore.getState().ready) void bootstrap() }) }
+  const retry = () => { void pollHealth().then(() => { if (!useStore.getState().ready) bootstrap().catch(() => undefined) }) }
   return (
     <>
       {connection === 'down' && (

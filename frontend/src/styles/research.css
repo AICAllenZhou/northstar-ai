@@ -34,6 +34,9 @@
 .callout.warn { border-color: var(--warn); }
 .big-none { font-size: 28px; font-weight: 800; color: var(--good) !important; margin: 4px 0; }
 .small { font-size: 12px; }
+.chart-legend { display: flex; justify-content: flex-end; gap: 16px; font-size: 12px; color: var(--ink-2); margin: 2px 0 6px; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 .chart-tip { background: var(--bg-2); border: 1px solid var(--line-2); border-radius: var(--r-1); padding: 8px 10px; font-size: 12px; color: var(--ink-2); box-shadow: var(--shadow); }
 .chart-tip .tip-title { color: var(--ink); font-weight: 700; margin-bottom: 4px; }
 .chart-tip b { color: var(--ink); }

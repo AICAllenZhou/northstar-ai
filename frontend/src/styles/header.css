@@ -40,7 +40,7 @@
 .annunciator.optimized .ann-state { color: var(--ns); }
 
 .demo-btn { border-color: var(--ns); color: var(--ns); }
-.demo-btn.active { background: var(--ns); color: var(--ns-ink); }
+.demo-btn.active, .btn.demo-btn.active:hover:not(:disabled) { background: var(--ns); color: var(--ns-ink); border-color: var(--ns); }
 
 .disclaimer {
   height: var(--disclaimer-h); display: flex; align-items: center; gap: 10px; padding: 0 16px;

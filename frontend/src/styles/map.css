@@ -18,7 +18,7 @@
 
 .ac-marker {
   width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-  position: relative; cursor: pointer; color: var(--util);
+  cursor: pointer; color: var(--util);
 }
 .ac-marker svg { fill: currentColor; filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 1px #000); }
 .ac-marker .cross { stroke: transparent; stroke-width: 2.6; stroke-linecap: round; }
@@ -42,7 +42,7 @@
 
 .mission-marker {
   width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center;
-  background: var(--bg-1); border: 1.5px solid currentColor; cursor: pointer; position: relative;
+  background: var(--bg-1); border: 1.5px solid currentColor; cursor: pointer;
   box-shadow: 0 1px 4px rgba(0,0,0,0.7);
 }
 .mission-marker svg { fill: currentColor; }
@@ -57,7 +57,7 @@
 .mission-marker[data-state='unserved'] { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
 
 .info-panel {
-  position: absolute; top: 10px; left: 10px; width: 280px; z-index: 5; font-size: 12.5px;
+  position: absolute; bottom: 10px; left: 10px; width: 290px; max-height: calc(100% - 20px); overflow: auto; z-index: 5; font-size: 12.5px;
   background: rgba(16, 23, 31, 0.95); border: 1px solid var(--line-2); border-radius: var(--r-2); box-shadow: var(--shadow);
 }
 .info-panel header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 12px 4px; }
@@ -69,7 +69,7 @@
 .info-panel dd { margin: 0; font-variant-numeric: tabular-nums; color: var(--ink); overflow-wrap: anywhere; }
 
 .map-legend {
-  position: absolute; left: 10px; bottom: 10px; z-index: 4; padding: 8px 10px;
+  position: absolute; right: 10px; bottom: 10px; z-index: 4; padding: 8px 10px;
   background: rgba(16, 23, 31, 0.9); border: 1px solid var(--line); border-radius: var(--r-2);
   display: grid; grid-template-columns: repeat(2, auto); gap: 3px 14px; font-size: 11px; color: var(--ink-2);
 }

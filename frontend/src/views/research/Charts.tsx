@@ -1,13 +1,8 @@
-import { Bar, BarChart, CartesianGrid, Cell, LabelList, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { MetricComparison, MetricInfo, Stat } from '../../api/types'
-import { fmtMetric, pValue, pct } from '../../lib/format'
+import { fmtMetric, pValue } from '../../lib/format'
 
-// Chart colours (validated with the dataviz palette checker against #10171f):
-// NORTHSTAR teal is the emphasis hue, baseline is the de-emphasis grey.
-export const CHART = {
-  ns: '#17a99d', base: '#8a98a8', loss: '#d9734f', tie: '#3a4756',
-  surface: '#10171f', ink: '#eef3f8', ink2: '#a9b6c4', ink3: '#6f8090', grid: '#233040',
-}
+import { CHART } from './chartTheme'
 
 interface TipPayload { payload: Record<string, unknown>; dataKey?: string | number; name?: string; value?: number | string }
 
@@ -72,7 +67,7 @@ function SegLabel(props: { x?: unknown; y?: unknown; width?: unknown; height?: u
 
 function WLTip({ active, payload }: { active?: boolean; payload?: TipPayload[] }) {
   if (!active || !payload?.length) return null
-  const r = payload[0].payload as WinLossRow
+  const r = payload[0].payload as unknown as WinLossRow
   return (
     <div className="chart-tip">
       <div className="tip-title">{r.label}</div>
@@ -86,13 +81,19 @@ function WLTip({ active, payload }: { active?: boolean; payload?: TipPayload[] }
 export function WinLossChart({ rows, n }: { rows: WinLossRow[]; n: number }) {
   const ticks = [0, Math.round(n / 4), Math.round(n / 2), Math.round((3 * n) / 4), n]
   return (
-    <ResponsiveContainer width="100%" height={rows.length * 34 + 56}>
+    <>
+      <div className="chart-legend" aria-label="Legend">
+        <span><i style={{ background: CHART.ns }} />NORTHSTAR better</span>
+        <span><i style={{ background: CHART.tie }} />Tie</span>
+        <span><i style={{ background: CHART.loss }} />Baseline better</span>
+      </div>
+    <ResponsiveContainer width="100%" height={rows.length * 34 + 40}>
       <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 0 }} barCategoryGap={10}>
         <CartesianGrid horizontal={false} stroke={CHART.grid} />
         <XAxis type="number" domain={[0, n]} ticks={ticks} tick={{ fill: CHART.ink3, fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis type="category" dataKey="label" width={250} tick={{ fill: CHART.ink2, fontSize: 12 }} axisLine={false} tickLine={false} interval={0} />
+        <YAxis type="category" dataKey="label" width={270} tick={{ fill: CHART.ink2, fontSize: 12 }} axisLine={false} tickLine={false} interval={0} />
         <Tooltip content={<WLTip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-        <Legend verticalAlign="top" align="right" iconType="square" iconSize={10} wrapperStyle={{ fontSize: 12, color: CHART.ink2, paddingBottom: 8 }} />
+
         <Bar dataKey="wins" name="NORTHSTAR better" stackId="a" fill={CHART.ns} stroke={CHART.surface} strokeWidth={2} isAnimationActive={false} maxBarSize={20}>
           <LabelList dataKey="wins" content={SegLabel} />
         </Bar>
@@ -104,7 +105,6 @@ export function WinLossChart({ rows, n }: { rows: WinLossRow[]; n: number }) {
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    </>
   )
 }
-
-export function pctCell(v: number | null): string { return pct(v, 1) }

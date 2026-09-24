@@ -25,12 +25,12 @@ export function ScenarioPanel() {
       <section className="panel">
         <div className="panel-title">
           <span className="eyebrow">Scenario</span>
-          <button className="btn small ghost" disabled={disabled} onClick={() => void resetScenario()} title="Healthy network, no disruptions">
+          <button className="btn small ghost" disabled={disabled} onClick={() => resetScenario().catch(() => undefined)} title="Healthy network, no disruptions">
             {busy === 'reset' ? <Spinner /> : 'Reset'}
           </button>
         </div>
         <div className="panel-body">
-          <select className="input" value={isPreset ? currentId : '__custom'} disabled={disabled} onChange={(e) => { if (e.target.value !== '__custom') void loadPreset(e.target.value) }} aria-label="Preset scenario">
+          <select className="input" value={isPreset ? currentId : '__custom'} disabled={disabled} onChange={(e) => { if (e.target.value !== '__custom') loadPreset(e.target.value).catch(() => undefined) }} aria-label="Preset scenario">
             {!isPreset && <option value="__custom">{scenario?.scenario.name ?? 'Custom scenario'}</option>}
             {presets.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
@@ -62,7 +62,7 @@ export function ScenarioPanel() {
                       {d.type === 'aircraft_failure' ? ` · ${d.target_ids.join(', ')}` : ''}
                     </div>
                   </div>
-                  <button className="btn small ghost" disabled={disabled} onClick={() => void removeDisruption(d.id)} aria-label={`Remove ${d.id}`}>✕</button>
+                  <button className="btn small ghost" disabled={disabled} onClick={() => removeDisruption(d.id).catch(() => undefined)} aria-label={`Remove ${d.id}`}>✕</button>
                 </li>
               )
             })}

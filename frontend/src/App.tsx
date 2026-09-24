@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { DatasetError, ErrorBanner } from './components/ErrorBanner'
 import { DemoStepper } from './components/DemoStepper'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { Header } from './components/Header'
 import { usePlayback } from './hooks/usePlayback'
 import { useStore } from './state/store'
@@ -17,7 +18,7 @@ export default function App() {
   usePlayback()
 
   useEffect(() => {
-    void bootstrap()
+    bootstrap().catch(() => undefined)
     const id = setInterval(() => void pollHealth(), 5000)
     return () => clearInterval(id)
   }, [bootstrap, pollHealth])
@@ -30,11 +31,11 @@ export default function App() {
       <Header onDemo={() => setDemo((d) => !d)} demoActive={demo} />
       <ErrorBanner />
       <div className="main">
-        <div className="view" hidden={view !== 'command'}><CommandCenter /></div>
-        <div className="view" hidden={view !== 'research'}><Research active={view === 'research'} /></div>
-        <div className="view" hidden={view !== 'responsible'}><ResponsibleAI /></div>
+        <div className="view" hidden={view !== 'command'}><ErrorBoundary label="Command Center"><CommandCenter /></ErrorBoundary></div>
+        <div className="view" hidden={view !== 'research'}><ErrorBoundary label="Research Results"><Research active={view === 'research'} /></ErrorBoundary></div>
+        <div className="view" hidden={view !== 'responsible'}><ErrorBoundary label="Responsible AI"><ResponsibleAI /></ErrorBoundary></div>
       </div>
-      {demo && <DemoStepper onExit={() => setDemo(false)} />}
+      {demo && <ErrorBoundary label="Demo Mode"><DemoStepper onExit={() => setDemo(false)} /></ErrorBoundary>}
     </div>
   )
 }

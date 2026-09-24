@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
+import { Fragment, useEffect } from 'react'
 import { EXPERIMENTS_CSV_URL } from '../api/client'
 import type { ExperimentSummary } from '../api/types'
-import { fmtMetric, pValue } from '../lib/format'
+import { fmtMetric, pValue, pct } from '../lib/format'
 import { useStore } from '../state/store'
-import { PairedMetricCard, WinLossChart, pctCell } from './research/Charts'
+import { PairedMetricCard, WinLossChart } from './research/Charts'
 
 const HEADLINE = ['medical_response_avg_min', 'disconnected_community_hours', 'cargo_delay_avg_min', 'passenger_delay_avg_min', 'recovery_time_min']
 const RUN_CMD = 'cd backend && uv run python ../experiments/run_experiments.py --n 100 --seed 42'
@@ -127,7 +127,7 @@ function Results({ exp }: { exp: ExperimentSummary }) {
               <tbody>
                 {keys.map((k) => (
                   <tr key={k}><td>{comp[k].label}</td>
-                    {exp.policies.map((p) => { const c = exp.comparisons[p]?.[k]; return <td key={p} className={c && c.improvement_pct !== null ? (c.improvement_pct > 0 ? 'good' : c.improvement_pct < 0 ? 'bad' : '') : ''}>{c ? `${pctCell(c.improvement_pct)} (${c.wins}/${c.losses}/${c.ties})` : '—'}</td> })}
+                    {exp.policies.map((p) => { const c = exp.comparisons[p]?.[k]; return <td key={p} className={c && c.improvement_pct !== null ? (c.improvement_pct > 0 ? 'good' : c.improvement_pct < 0 ? 'bad' : '') : ''}>{c ? `${pct(c.improvement_pct, 1)} (${c.wins}/${c.losses}/${c.ties})` : '—'}</td> })}
                   </tr>
                 ))}
               </tbody>
@@ -143,7 +143,7 @@ function Results({ exp }: { exp: ExperimentSummary }) {
           <table className="rs-table per-scenario">
             <thead>
               <tr><th>Scenario</th><th>Disruptions</th>{HEADLINE.map((k) => <th key={k} colSpan={2}>{comp[k]?.label ?? k}</th>)}</tr>
-              <tr><th /><th />{HEADLINE.map((k) => <><th key={k + 'b'} className="sub base">baseline</th><th key={k + 'n'} className="sub ns">NORTHSTAR</th></>)}</tr>
+              <tr><th /><th />{HEADLINE.map((k) => <Fragment key={k}><th className="sub base">baseline</th><th className="sub ns">NORTHSTAR</th></Fragment>)}</tr>
             </thead>
             <tbody>
               {per.map((r) => (
@@ -155,7 +155,7 @@ function Results({ exp }: { exp: ExperimentSummary }) {
                     const info = comp[k]
                     const bn = typeof b === 'number' ? b : null, nn = typeof n === 'number' ? n : null
                     const cls = bn === null || nn === null || bn === nn ? '' : (info.direction === 'lower' ? nn < bn : nn > bn) ? 'good' : 'bad'
-                    return <><td key={k + 'b'} className="num">{fmtMetric(k, bn, info)}</td><td key={k + 'n'} className={`num ${cls}`}>{fmtMetric(k, nn, info)}</td></>
+                    return <Fragment key={k}><td className="num">{fmtMetric(k, bn, info)}</td><td className={`num ${cls}`}>{fmtMetric(k, nn, info)}</td></Fragment>
                   })}
                 </tr>
               ))}

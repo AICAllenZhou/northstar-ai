@@ -1,7 +1,8 @@
-import type { StrategyName } from '../api/types'
+import type { DisruptionEffect, StrategyName } from '../api/types'
 import { clock } from '../lib/time'
 import { SPEEDS, useStore } from '../state/store'
 
+const EMPTY_EFFECTS: DisruptionEffect[] = []
 const HOURS = [0, 180, 360, 540, 720, 900, 1080, 1260, 1440]
 const RUNS: { id: StrategyName; label: string }[] = [
   { id: 'do_nothing', label: 'Do nothing' },
@@ -21,7 +22,7 @@ export function Timeline() {
   const setDisplayedRun = useStore((s) => s.setDisplayedRun)
   const runs = useStore((s) => s.runs)
   const hasDisruptions = useStore((s) => (s.scenario?.scenario.disruptions.length ?? 0) > 0)
-  const effects = useStore((s) => s.scenario?.disruption_effects ?? [])
+  const effects = useStore((s) => s.scenario?.disruption_effects) ?? EMPTY_EFFECTS
   const pct = (t / 1440) * 100
   return (
     <div className="timeline" role="group" aria-label="Timeline">

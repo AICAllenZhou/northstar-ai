@@ -65,7 +65,7 @@ export function MissionList() {
       {pax.length > 0 && (
         <>
           <button className="pax-toggle" onClick={() => setShowPax((v) => !v)} aria-expanded={showPax}>
-            <span className="caret">{showPax ? '▾' : '▸'}</span> {pax.length} scheduled passenger flights
+            <span className="caret">{showPax ? '▾' : '▸'}</span> {pax.length} scheduled flights
             {run && <span className="muted"> · {pax.filter((m) => outcomes.get(m.id)?.status === 'unserved').length} cancelled</span>}
           </button>
           {showPax && <ul className="strip-list compact">{pax.map(rowFor)}</ul>}

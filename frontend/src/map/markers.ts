@@ -1,4 +1,4 @@
-import maplibregl, { type Map as MlMap, type Marker } from 'maplibre-gl'
+import { Marker, type Map as MlMap } from 'maplibre-gl'
 import type { Aircraft, Airport, Mission } from '../api/types'
 import type { LngLat } from './geo'
 import { isHub } from './layers'
@@ -15,7 +15,7 @@ export function createAircraftMarker(map: MlMap, ac: Aircraft, at: LngLat, onCli
   el.title = `${ac.id} · ${ac.type}`
   el.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="${PLANE_PATH}"/><line class="cross" x1="4" y1="4" x2="20" y2="20"/></svg><span class="ac-id">${ac.id.replace('AC-', '')}</span>`
   el.addEventListener('click', (e) => { e.stopPropagation(); onClick(ac.id) })
-  const marker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(at).addTo(map)
+  const marker = new Marker({ element: el, anchor: 'center' }).setLngLat(at).addTo(map)
   return { id: ac.id, marker, el, icon: el.querySelector('svg') as SVGElement }
 }
 
@@ -35,7 +35,7 @@ export function createLabelMarker(map: MlMap, a: Airport): LabelMarker {
   const el = document.createElement('div')
   el.className = `map-label${hub ? ' hub' : ''}`
   el.textContent = a.community_name
-  const marker = new maplibregl.Marker({ element: el, anchor: 'left', offset: [hub ? 10 : 8, 0] }).setLngLat([a.lon, a.lat]).addTo(map)
+  const marker = new Marker({ element: el, anchor: 'left', offset: [hub ? 10 : 8, 0] }).setLngLat([a.lon, a.lat]).addTo(map)
   return { id: a.id, marker, el, lngLat: [a.lon, a.lat], priority: hub ? 0 : 1, width: a.community_name.length * 6.6 + 12 }
 }
 
@@ -65,7 +65,7 @@ export function createMissionMarker(map: MlMap, m: Mission, at: LngLat, onClick:
   el.title = m.label
   el.innerHTML = m.type === 'medical' ? CROSS : BOX
   el.addEventListener('click', (e) => { e.stopPropagation(); onClick(m.id) })
-  const marker = new maplibregl.Marker({ element: el, anchor: 'center', offset: [-11, -11] }).setLngLat(at).addTo(map)
+  const marker = new Marker({ element: el, anchor: 'center', offset: [-11, -11] }).setLngLat(at).addTo(map)
   return { id: m.id, marker, el }
 }
 

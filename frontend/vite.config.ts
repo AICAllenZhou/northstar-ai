@@ -11,5 +11,6 @@ export default defineConfig({
       '/api': { target: 'http://localhost:8000', changeOrigin: false },
     },
   },
-  build: { chunkSizeWarningLimit: 1500 },
+  // One offline SPA bundle (MapLibre + Recharts) is fine here; no code splitting needed.
+  build: { chunkSizeWarningLimit: 2000 },
 })

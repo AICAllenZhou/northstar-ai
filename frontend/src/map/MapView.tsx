@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import maplibregl, { type LngLatBoundsLike, type Map as MlMap } from 'maplibre-gl'
+import { Map as MlMap, NavigationControl, type ErrorEvent, type LngLatBoundsLike, type MapMouseEvent } from 'maplibre-gl'
 import { aircraftPositionsAt, statusAt, usedRouteIds } from '../lib/derive'
 import { snapshotIndex } from '../lib/time'
 import { selectDisplayedRun, useStore } from '../state/store'
@@ -11,13 +11,14 @@ import {
   type AircraftMarker, type LabelMarker, type MissionMarker,
 } from './markers'
 import { buildStyle } from './style'
+import './worker'
 
 export function MapView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MlMap | null>(null)
   const labelsRef = useRef<LabelMarker[]>([])
-  const aircraftRef = useRef<Map<string, AircraftMarker>>(new Map())
-  const missionsRef = useRef<Map<string, MissionMarker>>(new Map())
+  const aircraftRef = useRef<globalThis.Map<string, AircraftMarker>>(new globalThis.Map())
+  const missionsRef = useRef<globalThis.Map<string, MissionMarker>>(new globalThis.Map())
   const [loaded, setLoaded] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const network = useStore((s) => s.network)
@@ -26,17 +27,17 @@ export function MapView() {
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    const map = new maplibregl.Map({
+    const map = new MlMap({
       container: el, style: buildStyle(), center: [-88, 66.5], zoom: 3.2, attributionControl: false,
       dragRotate: false, pitchWithRotate: false, touchPitch: false, minZoom: 1.4, maxZoom: 9, fadeDuration: 0,
     })
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+    map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
     map.on('load', () => { addOverlayLayers(map); setLoaded(true) })
-    map.on('error', (e) => {
-      const msg = (e as { error?: Error }).error?.message ?? ''
+    map.on('error', (e: ErrorEvent) => {
+      const msg = e.error?.message ?? ''
       if (/basemap|fetch|network/i.test(msg)) setMapError('Basemap layers could not be loaded from /api/basemap.')
     })
-    map.on('click', (e) => {
+    map.on('click', (e: MapMouseEvent) => {
       const feats = map.queryRenderedFeatures(e.point, { layers: ['airports', 'routes-hit'] })
       const airport = feats.find((f) => f.layer.id === 'airports')
       const route = feats.find((f) => f.layer.id === 'routes-hit')
@@ -69,24 +70,26 @@ export function MapView() {
     const bounds: LngLatBoundsLike = [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]]
     map.fitBounds(bounds, { padding: { top: 50, bottom: 60, left: 90, right: 120 }, duration: 0 })
 
-    labelsRef.current = network.airports.map((a) => createLabelMarker(map, a))
-    const declutter = () => declutterLabels(map, labelsRef.current, map.getZoom())
+    const labels = network.airports.map((a) => createLabelMarker(map, a))
+    labelsRef.current = labels
+    const declutter = () => declutterLabels(map, labels, map.getZoom())
     declutter()
     map.on('moveend', declutter)
     map.on('zoom', declutter)
 
     const select = useStore.getState().select
+    const aircraftMarkers = aircraftRef.current
     for (const ac of network.aircraft) {
       const home = network.airports.find((a) => a.id === ac.home_airport_id)
-      aircraftRef.current.set(ac.id, createAircraftMarker(map, ac, [home?.lon ?? 0, home?.lat ?? 0], (id) => select({ kind: 'aircraft', id })))
+      aircraftMarkers.set(ac.id, createAircraftMarker(map, ac, [home?.lon ?? 0, home?.lat ?? 0], (id) => select({ kind: 'aircraft', id })))
     }
     return () => {
       map.off('moveend', declutter)
       map.off('zoom', declutter)
-      labelsRef.current.forEach((l) => l.marker.remove())
+      labels.forEach((l) => l.marker.remove())
       labelsRef.current = []
-      aircraftRef.current.forEach((m) => m.marker.remove())
-      aircraftRef.current.clear()
+      aircraftMarkers.forEach((m) => m.marker.remove())
+      aircraftMarkers.clear()
     }
   }, [loaded, network])
 
@@ -95,8 +98,10 @@ export function MapView() {
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loaded || !network) return
-    const apt = new Map(network.airports.map((a) => [a.id, a]))
+    const apt = new globalThis.Map(network.airports.map((a) => [a.id, a]))
     const select = useStore.getState().select
+    const missionMarkers = missionsRef.current
+    const aircraftMarkers = aircraftRef.current
 
     const syncMissions = () => {
       const s = useStore.getState()
@@ -104,12 +109,12 @@ export function MapView() {
       for (const m of s.scenario?.missions ?? []) {
         if (m.type === 'passenger') continue
         wanted.add(m.id)
-        if (!missionsRef.current.has(m.id)) {
+        if (!missionMarkers.has(m.id)) {
           const at = apt.get(m.type === 'medical' ? m.origin : m.dest)
-          if (at) missionsRef.current.set(m.id, createMissionMarker(map, m, [at.lon, at.lat], (id) => select({ kind: 'mission', id })))
+          if (at) missionMarkers.set(m.id, createMissionMarker(map, m, [at.lon, at.lat], (id) => select({ kind: 'mission', id })))
         }
       }
-      for (const [id, mm] of missionsRef.current) if (!wanted.has(id)) { mm.marker.remove(); missionsRef.current.delete(id) }
+      for (const [id, mm] of missionMarkers) if (!wanted.has(id)) { mm.marker.remove(); missionMarkers.delete(id) }
     }
 
     const updateSlow = () => {
@@ -122,9 +127,9 @@ export function MapView() {
         missions: s.scenario?.missions ?? [], effects: s.scenario?.disruption_effects ?? [], t: s.t,
         highlightPath: s.highlightPath, selectedAirport: s.selected?.kind === 'airport' ? s.selected.id : null,
       })
-      const outcomes = new Map((run?.assignments ?? []).map((o) => [o.mission_id, o]))
+      const outcomes = new globalThis.Map((run?.assignments ?? []).map((o) => [o.mission_id, o]))
       for (const m of s.scenario?.missions ?? []) {
-        const mm = missionsRef.current.get(m.id)
+        const mm = missionMarkers.get(m.id)
         if (!mm) continue
         const o = outcomes.get(m.id)
         const st = status.snapshot?.mission_status[m.id]
@@ -143,10 +148,22 @@ export function MapView() {
       const positions = aircraftPositionsAt(network, run, s.t, failedNoRun)
       const hl = new Set(s.highlightAircraft)
       const sel = s.selected?.kind === 'aircraft' ? s.selected.id : s.selected?.kind === 'decision' ? s.decisions.find((d) => d.mission_id === s.selected?.id)?.aircraft_id ?? null : null
+      // Aircraft parked at the same airport are fanned out in a row under the
+      // airport dot (labels sit to the right, mission icons up-left).
+      const parked = new globalThis.Map<string, number>()
+      for (const p of positions) if (p.status !== 'flying' && p.airportId) parked.set(p.airportId, (parked.get(p.airportId) ?? 0) + 1)
+      const slot = new globalThis.Map<string, number>()
       for (const p of positions) {
-        const m = aircraftRef.current.get(p.id)
+        const m = aircraftMarkers.get(p.id)
         if (!m) continue
-        m.marker.setLngLat(p.lngLat)
+        let offset: [number, number] = [0, 0]
+        if (p.status !== 'flying' && p.airportId) {
+          const n = parked.get(p.airportId) ?? 1
+          const i = slot.get(p.airportId) ?? 0
+          slot.set(p.airportId, i + 1)
+          offset = [(i - (n - 1) / 2) * 17, 19]
+        }
+        m.marker.setLngLat(p.lngLat).setOffset(offset)
         setAircraftState(m, p.status, p.bearing, hl.has(p.id), sel === p.id)
       }
     }
@@ -161,8 +178,8 @@ export function MapView() {
     })
     return () => {
       unsub()
-      missionsRef.current.forEach((m) => m.marker.remove())
-      missionsRef.current.clear()
+      missionMarkers.forEach((m) => m.marker.remove())
+      missionMarkers.clear()
     }
   }, [loaded, network])
 

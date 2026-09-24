@@ -135,13 +135,14 @@ export function usedRouteIds(network: NetworkResponse, run: RunResult | null | u
 /** Aircraft whose work differs between baseline and NORTHSTAR (reassignments). */
 export function changedAircraft(baseline: RunResult | undefined, northstar: RunResult | undefined): string[] {
   if (!baseline || !northstar) return []
-  const b = new Map(baseline.assignments.map((a) => [a.mission_id, a.aircraft_id]))
+  const b = new Map(baseline.assignments.map((a) => [a.mission_id, a]))
   const changed = new Set<string>()
   for (const a of northstar.assignments) {
+    if (a.status !== 'completed' || !a.aircraft_id) continue
     const prev = b.get(a.mission_id)
-    if (a.aircraft_id && prev !== a.aircraft_id) {
+    if (prev?.aircraft_id !== a.aircraft_id || prev.status !== 'completed') {
       changed.add(a.aircraft_id)
-      if (prev) changed.add(prev)
+      if (prev?.status === 'completed' && prev.aircraft_id) changed.add(prev.aircraft_id)
     }
   }
   return [...changed].sort()

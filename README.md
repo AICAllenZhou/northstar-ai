@@ -57,6 +57,7 @@ scripts/demo.sh
 
 # development: backend on :8000 with reload, Vite dev server on :5173
 scripts/dev.sh
+# (the backend serves frontend/dist only if it exists when it starts; after `npm run build`, restart it)
 
 # tests (backend) and quality gates (frontend)
 cd backend && uv run pytest

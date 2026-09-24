@@ -1,7 +1,7 @@
 # NORTHSTAR AI — Implementation Plan
 
-**Status:** Phase 1 audit complete. This document is the working plan for taking the
-PRD and Technical Design to a competition-ready prototype.
+**Status (2026-09-24):** Milestones 0–8 complete and committed; see §9 for the status log and the changes made during implementation. This document is the working
+plan for taking the PRD and Technical Design to a competition-ready prototype.
 **Date:** 2026-09-23
 **Inputs audited:** `docs/NORTHSTAR_AI_PRD.md`, `docs/NORTHSTAR_AI_Technical_Design.md`
 
@@ -259,3 +259,42 @@ Frontend:
 All PRD §12 items, the brief's final success sequence, all tests green,
 experiment results committed, and a rehearsed run of `docs/DEMO_SCRIPT.md`
 in under five minutes with the backend and frontend started by one command.
+
+
+---
+
+## 9. Status log
+
+| Milestone | State | Evidence |
+|-----------|-------|----------|
+| 0 Planning | done | this document, `WAICY_READINESS_CHECKLIST.md`, `DATA_AND_EXPERIMENT_METHODOLOGY.md`, `ARCHITECTURE.md` |
+| 1 Data | done | `datasets/processed/*` + `.meta.json`, `datasets/raw/PROVENANCE.json`, `DATA_PROVENANCE.md`, `scripts/build_datasets.py` |
+| 2 Core model + simulation | done | `backend/northstar/{models,geo,data,network,sim}`; `tests/test_loader.py`, `test_graph.py`, `test_simulation.py` |
+| 3 Baseline + metrics | done | `strategies/baseline.py` (v2, schedule-protecting), `strategies/schedule_only.py`, `metrics/evaluate.py` |
+| 4 NORTHSTAR optimizer | done | `strategies/northstar.py` (CP-SAT), `tests/test_northstar.py` (10 tests incl. reproducibility, hard constraints, no-feasible, healthy-day sanity, policy lever, zero rejected assignments) |
+| 5 Explainability + scenarios + API | done | `explain/explain.py`, `scenarios/presets.py` (6), `scenarios/generator.py`, `api/main.py`; `tests/test_api.py` (ten-step demo sequence) |
+| 6 Experiments + docs | done | `experiments/results/` (100 scenarios × {do-nothing, baseline, NORTHSTAR × 3 policies}; `--verify` OK), `RESPONSIBLE_AI.md`, `DEMO_SCRIPT.md`, `README.md` |
+| 7 Frontend | done | `frontend/` (React 19 + TS + MapLibre 6 + Recharts + Zustand, offline basemap, Demo Mode, Research and Responsible AI views); build + lint clean; `docs/screenshots/` |
+| 8 Hardening | backend done | 36 backend tests green; smoke test against a live server on both primary and backup presets; checklist evidence filled |
+
+### 9.1 Changes made during implementation that a reader should know about
+
+1. **Baseline v2.** The first baseline reassigned scheduled flights to any free
+   aircraft as soon as they were released and scored *worse than flying the
+   published schedule* on passenger delay and connectivity (a strawman
+   signature). Scheduled flights now keep their own aircraft unless it is
+   failed or stranded. Recorded before any experiment result was kept.
+2. **Objective weights.** Two defects were found on the presets and fixed before
+   the experiment: a distance weight high enough that cancelling the 737's
+   Ottawa rotation "saved" cost (fixed by lowering the distance weight and
+   raising the cancellation penalty; a healthy-day sanity test now guards it),
+   and cargo missions being parked until their deadline (fixed by a small
+   per-minute delivery-time term). No weight was tuned toward a demo outcome.
+3. **Solver bounding.** A 240-minute lookahead window gives identical preset
+   metrics to a 360-minute window at a quarter of the solve time.
+4. **Mid-mission availability.** Aircraft that are mid-mission are modelled at
+   their mission's destination (shared `queue_position()` helper); the first
+   experiment run surfaced 15 assignments rejected by the simulator's
+   defence-in-depth check, now zero, with a regression test.
+5. **Airport count** is 28 (25 Nunavut + 3 southern gateways), slightly above
+   the PRD's 15–25.

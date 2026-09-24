@@ -302,14 +302,22 @@ templates over these fields.
 | GET | `/experiments/jobs/{job_id}` | → `{state, done, total, summary?}` |
 
 ```
-ScenarioState  { scenario, missions, network_status_t0: {airports:{id:status}, routes:{id:status}, aircraft:{id:status}},
-                 disconnected_now: [community ids], has_baseline, has_northstar }
-RunResult      { strategy, status (OK|NO_FEASIBLE_SOLUTION|TIMEOUT|PARTIAL), metrics,
-                 assignments: [{mission_id, aircraft_id, path, depart_min, response_min, complete_min, status}],
-                 trace: { step_min, snapshots: [{t, aircraft:[{id, lat, lon, airport_id|null, leg:{from,to,progress}|null, status}],
-                          airports:{id:status}, routes:{id:status}, disconnected:[community ids]}] },
-                 solver: {status, wall_ms, objective, calls}|null, warnings: [..] }
+ScenarioState  { scenario, disruption_effects: [{id, type, label, start_min, end_min, severity, target_ids, center, radius_km,
+                 affected_airports?, closes_airports?, params}], missions: [Mission + origin, dest, is_critical],
+                 network_status_t0: {closed_airports[], closed_routes[], failed_aircraft[]}, structurally_disconnected_t0[],
+                 has_do_nothing, has_baseline, has_northstar, policy_id }
+RunResult      { strategy, status (OK|NO_FEASIBLE_SOLUTION|TIMEOUT|PARTIAL), metrics, assignments: [MissionOutcome],
+                 trace: { step_min, horizon_min, snapshots: [{t, aircraft:[{id, lat, lon, airport_id|null, status,
+                          mission_id, leg_from, leg_to, progress}], closed_airports[], closed_routes[], failed_aircraft[],
+                          structural_disconnected[], service_disconnected[], disconnected[], mission_status{}, critical_pending,
+                          route_risk{}}], legs: [Leg] },
+                 replans[], solver: {calls, total_wall_ms, max_wall_ms, statuses[], policy}|null, warnings[], events[],
+                 policy|null, decisions: [DecisionRecord]|null (NORTHSTAR only) }
 ```
+`GET /api/decisions` before a NORTHSTAR run returns 409; `GET /api/experiments/latest`
+returns 404 until the experiment has been run; `GET /api/health` returns 200 with
+`datasets_loaded: false` and `dataset_error` when datasets are missing, and every
+other endpoint then returns 503.
 Errors are JSON `{error, detail}` with 4xx for client mistakes and 503 when
 datasets are missing. Nothing returns 200 with an empty body on failure.
 

@@ -36,6 +36,7 @@ export function ComparePanel() {
         <div className="empty">Run the <strong>baseline</strong> and <strong>NORTHSTAR AI</strong> to compare the three responses to this scenario.</div>
       ) : (
         <table className="cmp-table">
+          <colgroup><col className="c-label" /><col className="c-val" /><col className="c-val" /><col className="c-val" /></colgroup>
           <thead>
             <tr>
               <th />
