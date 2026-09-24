@@ -350,4 +350,4 @@ strips above cover it, but a judge scanning the table will not see a loss column
 6. Cold-start acceptance from a fresh clone (`uv sync`, `npm ci`, build, `scripts/demo.sh`, driver) and the `--verify` gate on a quiet CPU (V5).
 7. README, readiness checklist and the final product review still describe V0 in places (V5 docs).
 
-**Commit:** _pending_
+**Commit:** e16f190
