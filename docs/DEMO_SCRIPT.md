@@ -7,8 +7,9 @@ so you know what to expect.
 ## Setup (before the judges arrive)
 
 1. Wi-Fi off. From the repository root: `scripts/demo.sh`. The server precomputes every preset
-   with the same engine the button uses; after about 40 s the five scenario cards in the command
-   center show *Precomputed ✓*. Do not start before they do.
+   with the same engine the button uses; the terminal prints `ready in N s: 5 presets precomputed`
+   (about 40 s) and the five scenario cards in the command center show *Precomputed ✓*. Do not
+   start before they do.
 2. Browser at http://localhost:8000/ — the landing page. Scroll once to the bottom and back so
    you have seen it; then click **Enter the command center**.
 3. On first visit a welcome dialog offers **Start guided demo**. Leave it open; that is your
