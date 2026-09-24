@@ -337,11 +337,21 @@ def _finalize(st: SimulationState, strategy_name: str) -> Trace:
             complete_min=ms.complete_min, assignment_changes=changes, infeasible_reason=ms.infeasible_reason,
         )
     starts = [d.start_min for d in st.scenario.disruptions]
+    statuses = [r["status"] for r in st.replans]
+    completed_any = any(o.status == "completed" for o in outcomes.values())
+    if "NO_FEASIBLE_SOLUTION" in statuses and not completed_any:
+        status = "NO_FEASIBLE_SOLUTION"
+    elif "TIMEOUT" in statuses:
+        status = "TIMEOUT"
+    elif "PARTIAL" in statuses:
+        status = "PARTIAL"
+    else:
+        status = "OK"
     return Trace(
         scenario_id=st.scenario.id, strategy=strategy_name, step_min=st.scenario.step_min, horizon_min=horizon,
         first_disruption_min=min(starts) if starts else None, last_disruption_start_min=max(starts) if starts else None,
         snapshots=st.snapshots, legs=st.legs, missions=outcomes, disconnected_intervals=st.disconnected_intervals,
         aircraft_flying_min={k: v.flying_min for k, v in st.aircraft.items()},
         aircraft_flown_km={k: round(v.flown_km, 1) for k, v in st.aircraft.items()},
-        events=st.events, replans=st.replans, solver_calls=st.solver_calls, warnings=st.warnings,
+        events=st.events, replans=st.replans, solver_calls=st.solver_calls, warnings=st.warnings, status=status,
     )
