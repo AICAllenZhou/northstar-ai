@@ -187,7 +187,12 @@ before any experiment result was recorded.)
 Per `plan()` call at time t₀ (all times in steps):
 
 Sets
-- A: aircraft not failed; each with `avail_at[a]` (now, or landing time if airborne) and `avail_airport[a]`.
+- A: aircraft not failed and not stranded; each with `avail_airport[a]` and
+  `avail_at[a]` from the shared `queue_position()` helper: its current location
+  and free time if it has no active mission, otherwise its active mission's
+  destination at the estimated completion time. The simulator validates every
+  assignment from the same helper, so optimizer and simulator cannot disagree
+  about where an aircraft becomes free.
 - M: undeparted missions (pending or queued). Missions already departed are fixed.
 - For each (a, m) with a feasible candidate: `rep[a,m]` repositioning steps from
   avail_airport, `dur[a,m]` mission steps, `dist[a,m]` km, `risk[a,m]`.

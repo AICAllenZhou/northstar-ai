@@ -266,8 +266,12 @@ def compare():
         for k in METRIC_INFO:
             b, n = out["baseline"].get(k), out["northstar"].get(k)
             if isinstance(b, (int, float)) and isinstance(n, (int, float)):
-                deltas[k] = {"delta": round(n - b, 2), "direction": METRIC_INFO[k]["direction"],
-                             "better": (n < b) if METRIC_INFO[k]["direction"] == "lower" else (n > b) if METRIC_INFO[k]["direction"] == "higher" else None}
+                direction = METRIC_INFO[k]["direction"]
+                if n == b or direction == "info":
+                    better = None  # tie (or informational metric): neither better nor worse
+                else:
+                    better = (n < b) if direction == "lower" else (n > b)
+                deltas[k] = {"delta": round(n - b, 2), "direction": direction, "better": better}
     return {**out, "deltas": deltas, "metric_info": METRIC_INFO, "primary": PRIMARY_METRICS, "policy_id": s.policy_id}
 
 

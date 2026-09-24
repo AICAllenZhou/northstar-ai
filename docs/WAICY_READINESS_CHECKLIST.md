@@ -33,7 +33,7 @@ rehearsal log). "Evidence" is filled in during Milestone 8 hardening.
 | ☑ | Sign-test p-values shown; no significance claimed below the threshold. | `summary.json` `comparisons[*][*].p_value` / `significant`; computed by exact two-sided sign test in `run_experiments.py` |
 | ☑ | Censored (unserved) mission counts shown next to every average. | `Metrics.medical_unserved`, `cargo_unserved`, `cancelled_flights`; `summary.md` → Censoring section |
 | ☐ | "How we tested NORTHSTAR" section exists on the Research screen. | |
-| ☑ | Re-running the experiment reproduces the committed CSV (`--verify`). | `uv run python ../experiments/run_experiments.py --verify` compares trace hashes; see final report for the run log |
+| ☑ | Re-running the experiment reproduces the committed CSV (`--verify`). | 2026-09-24: `run_experiments.py --verify` → "VERIFY OK: 500 runs reproduce the committed trace hashes" |
 
 ## D. Explainability and Responsible AI
 
