@@ -1,0 +1,13 @@
+{
+  "dataset": "schedule",
+  "real_or_synthetic": "synthetic",
+  "synthetic_fields": {
+    "all": "Invented one-day passenger schedule; times are minutes from scenario start (06:00 local)"
+  },
+  "assumptions": [
+    "Block time = great-circle distance / cruise speed rounded up to 30-minute steps"
+  ],
+  "build_version": "2026-09-24.1",
+  "built_utc": "2026-09-24T03:49:32Z",
+  "disclaimer": "NORTHSTAR AI is a research simulation. Synthetic fields are not real Canadian aviation operations data."
+}

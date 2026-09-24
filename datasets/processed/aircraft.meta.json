@@ -1,0 +1,14 @@
+{
+  "dataset": "aircraft",
+  "real_or_synthetic": "synthetic",
+  "synthetic_fields": {
+    "all": "Fleet composition, basing, availability and cost index are invented. Aircraft types are real; range, capacity, speed and minimum runway figures are rounded approximations of public manufacturer specifications and should not be used operationally."
+  },
+  "assumptions": [
+    "cost_index_per_km is a relative index, not currency",
+    "min_runway_length_m is a simulation threshold, not a certified figure"
+  ],
+  "build_version": "2026-09-24.1",
+  "built_utc": "2026-09-24T03:49:32Z",
+  "disclaimer": "NORTHSTAR AI is a research simulation. Synthetic fields are not real Canadian aviation operations data."
+}

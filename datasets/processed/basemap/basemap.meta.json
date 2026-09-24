@@ -1,0 +1,15 @@
+{
+  "dataset": "basemap",
+  "real_or_synthetic": "real",
+  "source_urls": [
+    "https://github.com/nvkelso/natural-earth-vector"
+  ],
+  "licence": "Natural Earth: public domain",
+  "assumptions": [
+    "coordinates rounded to 3 decimal places",
+    "filtered to North America / Canada"
+  ],
+  "build_version": "2026-09-24.1",
+  "built_utc": "2026-09-24T03:49:32Z",
+  "disclaimer": "NORTHSTAR AI is a research simulation. Synthetic fields are not real Canadian aviation operations data."
+}

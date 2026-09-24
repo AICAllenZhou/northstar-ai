@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Large raw downloads (re-fetchable; sha256 recorded in datasets/raw/PROVENANCE.json)
+datasets/raw/ourairports/airports.csv
+datasets/raw/ourairports/runways.csv
+datasets/raw/natural_earth/ne_50m_admin_0_countries.geojson
+datasets/raw/natural_earth/ne_50m_admin_1_states_provinces_lakes.geojson
+datasets/raw/natural_earth/ne_50m_lakes.geojson
+datasets/raw/statcan/98100002.csv
+datasets/raw/statcan/98100002_MetaData.csv
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Experiment scratch (committed results live in experiments/results/)
+experiments/scratch/

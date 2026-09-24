@@ -1,0 +1,16 @@
+{
+  "dataset": "routes",
+  "real_or_synthetic": "synthetic",
+  "real_fields": {
+    "distance_km": "great-circle distance derived from real coordinates"
+  },
+  "synthetic_fields": {
+    "route list,corridor,base_risk": "hub-and-spoke simplification informed by publicly advertised Northern airline networks; not an official schedule or airway structure"
+  },
+  "assumptions": [
+    "Undirected routes"
+  ],
+  "build_version": "2026-09-24.1",
+  "built_utc": "2026-09-24T03:49:32Z",
+  "disclaimer": "NORTHSTAR AI is a research simulation. Synthetic fields are not real Canadian aviation operations data."
+}

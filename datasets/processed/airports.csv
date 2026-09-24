@@ -1,0 +1,29 @@
+id,iata,name,community_name,region,lat,lon,elevation_m,runway_length_m,runway_surface,is_medical_hub,is_cargo_hub,is_passenger_hub,hub_note,base_weather_risk,base_wildfire_risk,data_flags
+CYAB,YAB,Arctic Bay Airport,Arctic Bay,Qikiqtaaluk,73.0061,-85.04616,22,1199,gravel,False,False,False,,0.1,0.0,
+CYBB,YBB,Kugaaruk Airport,Kugaaruk,Kitikmeot,68.53571,-89.80551,17,1524,gravel,False,False,False,,0.1,0.0,
+CYBK,YBK,Baker Lake Airport,Baker Lake,Kivalliq,64.2989,-96.0778,18,1280,gravel,False,False,False,,0.1,0.0,
+CYCB,YCB,Cambridge Bay Airport,Cambridge Bay,Kitikmeot,69.1081,-105.138,27,1524,gravel,True,True,True,Kitikmeot regional health centre; airline hub,0.1,0.0,
+CYCO,YCO,Kugluktuk Airport,Kugluktuk,Kitikmeot,67.81641,-115.14307,23,1676,gravel,False,False,False,,0.1,0.0,
+CYCS,YCS,Chesterfield Inlet Airport,Chesterfield Inlet,Kivalliq,63.3469,-90.7311,10,1097,gravel,False,False,False,,0.1,0.0,runway_surface_from_secondary_source
+CYCY,YCY,Clyde River Airport,Clyde River,Qikiqtaaluk,70.4861,-68.5167,27,1067,gravel,False,False,False,,0.1,0.0,
+CYEK,YEK,Arviat Airport,Arviat,Kivalliq,61.0942,-94.0708,10,1219,gravel,False,False,False,,0.1,0.0,
+CYFB,YFB,Iqaluit Airport,Iqaluit,Qikiqtaaluk,63.7564,-68.5558,34,2623,paved,True,True,True,Qikiqtani General Hospital; Baffin airline hub,0.1,0.0,
+CYGT,YGT,Igloolik Airport,Igloolik,Qikiqtaaluk,69.3647,-81.8161,53,1248,gravel,False,False,False,,0.1,0.0,
+CYGZ,YGZ,Grise Fiord Airport,Grise Fiord,Qikiqtaaluk,76.42582,-82.90858,45,511,gravel,False,False,False,,0.1,0.0,runway_length_from_secondary_source;runway_surface_from_secondary_source
+CYHK,YHK,Gjoa Haven Airport,Gjoa Haven,Kitikmeot,68.6356,-95.8497,46,1341,gravel,False,False,False,,0.1,0.0,
+CYIO,YIO,Pond Inlet Airport,Pond Inlet,Qikiqtaaluk,72.68949,-77.96894,55,1219,gravel,False,False,False,,0.1,0.0,
+CYLC,YLC,Kimmirut Airport,Kimmirut,Qikiqtaaluk,62.84825,-69.87785,53,579,gravel,False,False,False,,0.1,0.0,runway_length_from_secondary_source;runway_surface_from_secondary_source
+CYOW,YOW,Ottawa Macdonald-Cartier International Airport,Ottawa,South gateway,45.3225,-75.6692,114,3048,paved,True,True,True,Tertiary hospitals; Baffin southern gateway,0.1,0.0,
+CYRB,YRB,Resolute Bay Airport,Resolute,Qikiqtaaluk,74.7169,-94.9694,66,1981,gravel,False,False,False,,0.1,0.0,
+CYRT,YRT,Rankin Inlet Airport,Rankin Inlet,Kivalliq,62.8114,-92.1158,29,1829,paved,True,True,True,Kivalliq regional health centre; airline hub,0.1,0.0,
+CYSK,YSK,Sanikiluaq Airport,Sanikiluaq,Qikiqtaaluk,56.53689,-79.25022,32,1158,gravel,False,False,False,,0.1,0.0,
+CYTE,YTE,Cape Dorset Airport,Kinngait,Qikiqtaaluk,64.23,-76.5267,50,1219,gravel,False,False,False,,0.1,0.0,
+CYUT,YUT,Naujaat Airport,Naujaat,Kivalliq,66.52102,-86.22517,24,1036,gravel,False,False,False,,0.1,0.0,
+CYUX,YUX,Hall Beach Airport,Sanirajak,Qikiqtaaluk,68.7761,-81.2425,9,1649,gravel,False,False,False,,0.1,0.0,
+CYVM,YVM,Qikiqtarjuaq Airport,Qikiqtarjuaq,Qikiqtaaluk,67.54656,-64.03141,6,1158,gravel,False,False,False,,0.1,0.0,
+CYWG,YWG,Winnipeg / James Armstrong Richardson International Airport,Winnipeg,South gateway,49.91,-97.2399,239,3353,paved,True,True,True,Tertiary hospitals; Kivalliq southern gateway,0.1,0.0,
+CYXN,YXN,Whale Cove Airport,Whale Cove,Kivalliq,62.24,-92.5981,12,1219,gravel,False,False,False,,0.1,0.0,runway_surface_from_secondary_source
+CYXP,YXP,Pangnirtung Airport,Pangnirtung,Qikiqtaaluk,66.14488,-65.71361,23,890,gravel,False,False,False,,0.1,0.0,
+CYYH,YYH,Taloyoak Airport,Taloyoak,Kitikmeot,69.5467,-93.5767,28,1225,gravel,False,False,False,,0.1,0.0,
+CYZF,YZF,Yellowknife International Airport,Yellowknife,South gateway,62.4628,-114.44,206,2286,paved,True,True,True,Stanton Territorial Hospital; southern gateway,0.1,0.0,
+CYZS,YZS,Coral Harbour Airport,Coral Harbour,Kivalliq,64.1933,-83.3594,64,1524,gravel,False,False,False,,0.1,0.0,

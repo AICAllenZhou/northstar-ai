@@ -1,0 +1,128 @@
+[
+  {
+    "file": "datasets/raw/ourairports/airports.csv",
+    "source_url": "https://davidmegginson.github.io/ourairports-data/airports.csv",
+    "license_or_terms": "Public domain (Unlicense) per https://ourairports.com/data/",
+    "retrieved_utc": "2026-09-24T03:36:03Z",
+    "sha256": "61076a8aa1e1fcaf7060753301158667ec597cf8859a163f8f3733c62cf4524b",
+    "bytes": 12729883,
+    "notes": "Full unmodified raw download (HTTP 200). 86,126 airport rows."
+  },
+  {
+    "file": "datasets/raw/ourairports/runways.csv",
+    "source_url": "https://davidmegginson.github.io/ourairports-data/runways.csv",
+    "license_or_terms": "Public domain (Unlicense) per https://ourairports.com/data/",
+    "retrieved_utc": "2026-09-24T03:36:03Z",
+    "sha256": "a59feef03308ca67980144563443a661bc0a84d4bdc128ee7f2d310deb47f0f6",
+    "bytes": 3965527,
+    "notes": "Full unmodified raw download (HTTP 200)."
+  },
+  {
+    "file": "datasets/raw/ourairports/selected_airports.csv",
+    "source_url": "https://davidmegginson.github.io/ourairports-data/airports.csv",
+    "license_or_terms": "Public domain (Unlicense) per https://ourairports.com/data/",
+    "retrieved_utc": "2026-09-24T03:36:03Z",
+    "sha256": "0b2be10afa4b3000fb37dd3fe10ae00fc94870532d99833ff0cba3bbf839f05d",
+    "bytes": 2597,
+    "notes": "DERIVED: 28 rows extracted verbatim from airports.csv by exact match on 'ident' (CYFB CYRT CYEK CYBK CYCB CYGT CYIO CYXP CYCO CYTE CYHK CYUT CYYH CYZS CYCY CYBB CYSK CYXN CYCS CYUX CYAB CYVM CYRB CYGZ CYLC CYZF CYWG CYOW). All 28 found; no substitutions. Columns subset: ident,iata_code,name,municipality,iso_region,latitude_deg,longitude_deg,elevation_ft,type. Note OurAirports still names CYTE 'Cape Dorset Airport' and CYUX 'Hall Beach Airport'."
+  },
+  {
+    "file": "datasets/raw/ourairports/selected_runways.csv",
+    "source_url": "https://davidmegginson.github.io/ourairports-data/runways.csv",
+    "license_or_terms": "Public domain (Unlicense) per https://ourairports.com/data/",
+    "retrieved_utc": "2026-09-24T03:36:03Z",
+    "sha256": "946335f234cf54488c08ead7707e37d35dfdf688c375edc32c9fbd383de1a04d",
+    "bytes": 1015,
+    "notes": "DERIVED: 31 rows extracted verbatim from runways.csv where airport_ident is one of the 28 idents. Column subset: airport_ident,le_ident,he_ident,length_ft,width_ft,surface,lighted,closed. GAP: runways.csv contains NO runway rows for CYGZ (Grise Fiord) and CYLC (Kimmirut); these airports therefore have no runway data here (verified also via airport_ref id 1754 and 1798)."
+  },
+  {
+    "file": "datasets/raw/statcan/98100002-eng.zip",
+    "source_url": "https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip",
+    "license_or_terms": "Statistics Canada Open Licence https://www.statcan.gc.ca/en/reference/licence",
+    "retrieved_utc": "2026-09-24T03:38:37Z",
+    "sha256": "36ab6c8f3f6b82d70d9dea927cb5cf04f6fbf9b543a7ad543695e6ea70d22876",
+    "bytes": 551875,
+    "notes": "Full unmodified raw download (HTTP 200) of table 98-10-0002-01 'Population and dwelling counts: Canada and census subdivisions (municipalities)', 2021 Census, 100% data. Contains 98100002.csv and 98100002_MetaData.csv."
+  },
+  {
+    "file": "datasets/raw/statcan/98100002.csv",
+    "source_url": "https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip",
+    "license_or_terms": "Statistics Canada Open Licence https://www.statcan.gc.ca/en/reference/licence",
+    "retrieved_utc": "2026-09-24T03:38:37Z",
+    "sha256": "1e983c04a99ab93d270ae8d113aa6113203c5f872afa5a62918066c499416b3d",
+    "bytes": 806597,
+    "notes": "Unmodified extraction from 98100002-eng.zip (5,470 data rows; 5,161 census-subdivision rows with DGUID schema 2021A0005)."
+  },
+  {
+    "file": "datasets/raw/statcan/98100002_MetaData.csv",
+    "source_url": "https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip",
+    "license_or_terms": "Statistics Canada Open Licence https://www.statcan.gc.ca/en/reference/licence",
+    "retrieved_utc": "2026-09-24T03:38:37Z",
+    "sha256": "318d6d2f7b24f9433cb6a1b373577222ecf858b52a6bb22a642ce87f87a3eedf",
+    "bytes": 4613399,
+    "notes": "Unmodified extraction from 98100002-eng.zip (cube metadata, member list, footnotes)."
+  },
+  {
+    "file": "datasets/raw/statcan/population_2021.csv",
+    "source_url": "https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip",
+    "license_or_terms": "Statistics Canada Open Licence https://www.statcan.gc.ca/en/reference/licence",
+    "retrieved_utc": "2026-09-24T03:38:37Z",
+    "sha256": "b60eba12d0b9f00c6d4925214f7943445f60c61e7060c54e97fe32af3d4205dc",
+    "bytes": 3969,
+    "notes": "DERIVED: 28 rows. Matched census-subdivision rows (DGUID prefix 2021A0005) by exact GEO name plus province code embedded in the DGUID (62=Nunavut, 61=NWT, 46=Manitoba, 35=Ontario). population_2021 copied verbatim from column 'Population and dwelling counts (13): Population, 2021 [1]'. The StatCan 2021 table uses the legacy CSD names 'Cape Dorset' (for Kinngait) and 'Hall Beach' (for Sanirajak); csd_name_as_in_source records the source name. 'Resolute' matched as-is. All 28 populations were retrieved; none typed from memory. Symbols/flag column was empty for all 28 rows."
+  },
+  {
+    "file": "datasets/raw/natural_earth/ne_50m_admin_0_countries.geojson",
+    "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson",
+    "license_or_terms": "Public domain per https://www.naturalearthdata.com/about/terms-of-use/",
+    "retrieved_utc": "2026-09-24T03:39:59Z",
+    "sha256": "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb",
+    "bytes": 3083490,
+    "notes": "Full unmodified raw download (HTTP 200), 242 features. Retained so the filtered file can be reproduced."
+  },
+  {
+    "file": "datasets/raw/natural_earth/ne_50m_admin_1_states_provinces_lakes.geojson",
+    "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces_lakes.geojson",
+    "license_or_terms": "Public domain per https://www.naturalearthdata.com/about/terms-of-use/",
+    "retrieved_utc": "2026-09-24T03:39:59Z",
+    "sha256": "b92c3f709b691240f6320e5cd7fade78cedfa3b91ecff14cecd3de0616c764b9",
+    "bytes": 2357849,
+    "notes": "Full unmodified raw download (HTTP 200), 294 features. Retained so the filtered file can be reproduced."
+  },
+  {
+    "file": "datasets/raw/natural_earth/ne_50m_lakes.geojson",
+    "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_lakes.geojson",
+    "license_or_terms": "Public domain per https://www.naturalearthdata.com/about/terms-of-use/",
+    "retrieved_utc": "2026-09-24T03:39:59Z",
+    "sha256": "d350b75978b26fe839b797c2c529b2fb8f47fb3983c03f4964e36d5df9378a52",
+    "bytes": 876018,
+    "notes": "Full unmodified raw download (HTTP 200), 412 features. Retained so the filtered file can be reproduced."
+  },
+  {
+    "file": "datasets/raw/natural_earth/ne_50m_countries_northamerica.geojson",
+    "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson",
+    "license_or_terms": "Public domain per https://www.naturalearthdata.com/about/terms-of-use/",
+    "retrieved_utc": "2026-09-24T03:39:59Z",
+    "sha256": "af09ddbcdc48c3bd286241a26eae70ff31dcda513518a174eec9f2caf2a966d2",
+    "bytes": 471725,
+    "notes": "DERIVED: kept 6 features where ADMIN in {Canada, United States of America, Greenland, Denmark, Iceland, Russia}; properties reduced to ADMIN,NAME,ISO_A2,ISO_A3,SOVEREIGNT; all coordinates rounded to 3 decimal places (~100 m) with a Python script; minified JSON."
+  },
+  {
+    "file": "datasets/raw/natural_earth/ne_50m_canada_provinces.geojson",
+    "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces_lakes.geojson",
+    "license_or_terms": "Public domain per https://www.naturalearthdata.com/about/terms-of-use/",
+    "retrieved_utc": "2026-09-24T03:39:59Z",
+    "sha256": "b5ed0cdb9196f8320ba0077a3637cc66fde472872d6ad7f8e4317e85c7c2918c",
+    "bytes": 256559,
+    "notes": "DERIVED: kept 13 features where admin == 'Canada' (10 provinces + 3 territories); properties reduced to name,name_en,postal,iso_3166_2,type_en,admin; coordinates rounded to 3 decimal places; minified JSON."
+  },
+  {
+    "file": "datasets/raw/natural_earth/ne_50m_lakes_canada.geojson",
+    "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_lakes.geojson",
+    "license_or_terms": "Public domain per https://www.naturalearthdata.com/about/terms-of-use/",
+    "retrieved_utc": "2026-09-24T03:39:59Z",
+    "sha256": "d4c899f9fc9c10bfe94e6d8dd2adc25482588fea0e5223362b508cd60d9f1bd5",
+    "bytes": 155032,
+    "notes": "DERIVED: kept 145 of 412 lake features whose full bounding box lies within lon -141..-50 and lat 41..84 (this includes US lakes in that box, e.g. the Great Lakes); properties reduced to name,featurecla,scalerank; coordinates rounded to 3 decimal places; minified JSON."
+  }
+]

@@ -1,0 +1,11 @@
+id,type,callsign,home_airport_id,range_km,capacity_people,cargo_capacity_kg,min_runway_length_m,gravel_capable,speed_kmh,cost_index_per_km,role
+AC-01,DHC-6 Twin Otter,NST01,CYFB,1400,19,1500,450,True,280,1.0,utility
+AC-02,DHC-6 Twin Otter,NST02,CYRT,1400,19,1500,450,True,280,1.0,utility
+AC-03,DHC-6 Twin Otter,NST03,CYCB,1400,19,1500,450,True,280,1.0,utility
+AC-04,ATR 42-500,NST04,CYFB,1500,46,5000,1100,True,500,2.2,passenger
+AC-05,ATR 42-500 combi,NST05,CYRT,1500,30,5500,1100,True,500,2.2,combi
+AC-06,Dash 8-300,NST06,CYCB,1500,50,4000,1050,True,500,2.4,passenger
+AC-07,King Air 350 medevac,NST07,CYRT,2800,6,500,1000,True,560,1.6,medevac
+AC-08,King Air 350 medevac,NST08,CYFB,2800,6,500,1000,True,560,1.6,medevac
+AC-09,Pilatus PC-12 medevac,NST09,CYCB,2800,6,600,850,True,500,1.4,medevac
+AC-10,Boeing 737-200 combi,NST10,CYFB,3000,100,7000,1800,True,780,6.0,combi

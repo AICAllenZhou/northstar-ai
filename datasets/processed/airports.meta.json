@@ -1,0 +1,27 @@
+{
+  "dataset": "airports",
+  "real_or_synthetic": "mixed",
+  "real_fields": {
+    "id,iata,name,lat,lon,elevation_m": "OurAirports airports.csv (public domain)",
+    "runway_length_m,runway_surface": "OurAirports runways.csv (public domain); CYGZ and CYLC length and CYXN/CYCS surface from Wikipedia infoboxes citing the Canada Flight Supplement (secondary source, flagged in data_flags)"
+  },
+  "synthetic_fields": {
+    "is_medical_hub,is_cargo_hub,is_passenger_hub,hub_note": "project assumption informed by public knowledge; not an official designation",
+    "base_weather_risk,base_wildfire_risk": "constant placeholders used by the transparent risk score",
+    "community_name": "current official community names substituted for legacy names in sources (Kinngait, Sanirajak, Naujaat, Resolute)"
+  },
+  "source_urls": [
+    "https://davidmegginson.github.io/ourairports-data/airports.csv",
+    "https://davidmegginson.github.io/ourairports-data/runways.csv",
+    "https://ourairports.com/data/"
+  ],
+  "licence": "OurAirports: public domain (Unlicense)",
+  "assumptions": [
+    "Longest open runway used",
+    "runway surface normalised to paved|gravel"
+  ],
+  "provenance_record": "datasets/raw/PROVENANCE.json",
+  "build_version": "2026-09-24.1",
+  "built_utc": "2026-09-24T03:49:32Z",
+  "disclaimer": "NORTHSTAR AI is a research simulation. Synthetic fields are not real Canadian aviation operations data."
+}

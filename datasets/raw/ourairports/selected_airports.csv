@@ -1,0 +1,29 @@
+ident,iata_code,name,municipality,iso_region,latitude_deg,longitude_deg,elevation_ft,type
+CYFB,YFB,Iqaluit Airport,Iqaluit,CA-NU,63.756402,-68.555801,110,medium_airport
+CYRT,YRT,Rankin Inlet Airport,Rankin Inlet,CA-NU,62.8114013672,-92.1157989502,94,medium_airport
+CYEK,YEK,Arviat Airport,Arviat,CA-NU,61.0942,-94.070801,32,small_airport
+CYBK,YBK,Baker Lake Airport,Baker Lake,CA-NU,64.29889678960001,-96.077796936,59,medium_airport
+CYCB,YCB,Cambridge Bay Airport,Cambridge Bay,CA-NU,69.1081008911,-105.138000488,90,medium_airport
+CYGT,YGT,Igloolik Airport,Igloolik,CA-NU,69.3647,-81.816101,174,small_airport
+CYIO,YIO,Pond Inlet Airport,Pond Inlet,CA-NU,72.689494,-77.968941,181,small_airport
+CYXP,YXP,Pangnirtung Airport,Pangnirtung,CA-NU,66.144878,-65.713606,75,small_airport
+CYCO,YCO,Kugluktuk Airport,Kugluktuk,CA-NU,67.816408,-115.14307,74,small_airport
+CYTE,YTE,Cape Dorset Airport,Kinngait,CA-NU,64.230003,-76.526703,164,small_airport
+CYHK,YHK,Gjoa Haven Airport,Gjoa Haven,CA-NU,68.635597,-95.849701,152,small_airport
+CYUT,YUT,Naujaat Airport,Repulse Bay,CA-NU,66.521024,-86.225166,80,small_airport
+CYYH,YYH,Taloyoak Airport,Taloyoak,CA-NU,69.5467,-93.576698,92,small_airport
+CYZS,YZS,Coral Harbour Airport,Coral Harbour,CA-NU,64.1932983398,-83.3593978882,210,medium_airport
+CYCY,YCY,Clyde River Airport,Clyde River,CA-NU,70.486099,-68.516701,87,small_airport
+CYBB,YBB,Kugaaruk Airport,Kugaaruk,CA-NU,68.535711,-89.805508,56,small_airport
+CYSK,YSK,Sanikiluaq Airport,Sanikiluaq,CA-NU,56.536891,-79.250221,104,small_airport
+CYXN,YXN,Whale Cove Airport,Whale Cove,CA-NU,62.240002,-92.598099,40,small_airport
+CYCS,YCS,Chesterfield Inlet Airport,Chesterfield Inlet,CA-NU,63.346901,-90.731102,32,small_airport
+CYUX,YUX,Hall Beach Airport,Sanirajak,CA-NU,68.7761,-81.2425,30,medium_airport
+CYAB,YAB,Arctic Bay Airport,Arctic Bay,CA-NU,73.006101,-85.04616,72,small_airport
+CYVM,YVM,Qikiqtarjuaq Airport,Qikiqtarjuaq,CA-NU,67.54656,-64.03141,21,small_airport
+CYRB,YRB,Resolute Bay Airport,Resolute Bay,CA-NU,74.7169036865,-94.9693984985,215,medium_airport
+CYGZ,YGZ,Grise Fiord Airport,Grise Fiord,CA-NU,76.425823,-82.908583,146,small_airport
+CYLC,YLC,Kimmirut Airport,Kimmirut,CA-NU,62.848253,-69.877853,175,small_airport
+CYZF,YZF,Yellowknife International Airport,Yellowknife,CA-NT,62.462799,-114.440002,675,medium_airport
+CYWG,YWG,Winnipeg / James Armstrong Richardson International Airport,Winnipeg,CA-MB,49.909999847399995,-97.2398986816,783,large_airport
+CYOW,YOW,Ottawa Macdonald-Cartier International Airport,Ottawa,CA-ON,45.322498,-75.669197,374,large_airport

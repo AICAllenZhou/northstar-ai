@@ -1,0 +1,23 @@
+{
+  "dataset": "communities",
+  "real_or_synthetic": "mixed",
+  "real_fields": {
+    "name,lat,lon": "OurAirports (community located at its airport coordinates)",
+    "population_2021": "Statistics Canada, 2021 Census of Population, table 98-10-0002-01 (Statistics Canada Open Licence)"
+  },
+  "synthetic_fields": {
+    "priority_weight": "equal weighting by default (1.0); see RESPONSIBLE_AI.md",
+    "region": "Nunavut administrative regions (public knowledge)"
+  },
+  "source_urls": [
+    "https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip",
+    "https://www.statcan.gc.ca/en/reference/licence"
+  ],
+  "licence": "Statistics Canada Open Licence",
+  "assumptions": [
+    "Community coordinates approximated by airport coordinates"
+  ],
+  "build_version": "2026-09-24.1",
+  "built_utc": "2026-09-24T03:49:32Z",
+  "disclaimer": "NORTHSTAR AI is a research simulation. Synthetic fields are not real Canadian aviation operations data."
+}

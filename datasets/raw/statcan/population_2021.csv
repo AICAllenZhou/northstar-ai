@@ -1,0 +1,29 @@
+community_name,csd_name_as_in_source,province_territory,population_2021,dguid,ref_date,statcan_symbol_flag,source_url,retrieved_utc
+Iqaluit,Iqaluit,Nunavut,7429,2021A00056204003,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Rankin Inlet,Rankin Inlet,Nunavut,2975,2021A00056205017,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Arviat,Arviat,Nunavut,2864,2021A00056205015,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Baker Lake,Baker Lake,Nunavut,2061,2021A00056205023,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Cambridge Bay,Cambridge Bay,Nunavut,1760,2021A00056208073,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Igloolik,Igloolik,Nunavut,2049,2021A00056204012,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Pond Inlet,Pond Inlet,Nunavut,1555,2021A00056204020,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Pangnirtung,Pangnirtung,Nunavut,1504,2021A00056204009,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Kugluktuk,Kugluktuk,Nunavut,1382,2021A00056208059,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Kinngait,Cape Dorset,Nunavut,1396,2021A00056204007,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Gjoa Haven,Gjoa Haven,Nunavut,1349,2021A00056208081,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Naujaat,Naujaat,Nunavut,1225,2021A00056205027,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Taloyoak,Taloyoak,Nunavut,934,2021A00056208087,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Coral Harbour,Coral Harbour,Nunavut,1035,2021A00056205014,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Clyde River,Clyde River,Nunavut,1181,2021A00056204015,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Kugaaruk,Kugaaruk,Nunavut,1033,2021A00056208047,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Sanikiluaq,Sanikiluaq,Nunavut,1010,2021A00056204001,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Whale Cove,Whale Cove,Nunavut,470,2021A00056205016,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Chesterfield Inlet,Chesterfield Inlet,Nunavut,397,2021A00056205019,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Sanirajak,Hall Beach,Nunavut,891,2021A00056204011,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Arctic Bay,Arctic Bay,Nunavut,994,2021A00056204018,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Qikiqtarjuaq,Qikiqtarjuaq,Nunavut,593,2021A00056204010,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Resolute,Resolute,Nunavut,183,2021A00056204022,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Grise Fiord,Grise Fiord,Nunavut,144,2021A00056204025,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Kimmirut,Kimmirut,Nunavut,426,2021A00056204005,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Yellowknife,Yellowknife,Northwest Territories,20340,2021A00056106023,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Winnipeg,Winnipeg,Manitoba,749607,2021A00054611040,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z
+Ottawa,Ottawa,Ontario,1017449,2021A00053506008,2021,,https://www150.statcan.gc.ca/n1/tbl/csv/98100002-eng.zip,2026-09-24T03:38:37Z

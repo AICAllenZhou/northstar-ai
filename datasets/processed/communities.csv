@@ -1,0 +1,26 @@
+id,name,airport_id,region,lat,lon,population_2021,priority_weight
+COM-YAB,Arctic Bay,CYAB,Qikiqtaaluk,73.0061,-85.04616,994,1.0
+COM-YBB,Kugaaruk,CYBB,Kitikmeot,68.53571,-89.80551,1033,1.0
+COM-YBK,Baker Lake,CYBK,Kivalliq,64.2989,-96.0778,2061,1.0
+COM-YCB,Cambridge Bay,CYCB,Kitikmeot,69.1081,-105.138,1760,1.0
+COM-YCO,Kugluktuk,CYCO,Kitikmeot,67.81641,-115.14307,1382,1.0
+COM-YCS,Chesterfield Inlet,CYCS,Kivalliq,63.3469,-90.7311,397,1.0
+COM-YCY,Clyde River,CYCY,Qikiqtaaluk,70.4861,-68.5167,1181,1.0
+COM-YEK,Arviat,CYEK,Kivalliq,61.0942,-94.0708,2864,1.0
+COM-YFB,Iqaluit,CYFB,Qikiqtaaluk,63.7564,-68.5558,7429,1.0
+COM-YGT,Igloolik,CYGT,Qikiqtaaluk,69.3647,-81.8161,2049,1.0
+COM-YGZ,Grise Fiord,CYGZ,Qikiqtaaluk,76.42582,-82.90858,144,1.0
+COM-YHK,Gjoa Haven,CYHK,Kitikmeot,68.6356,-95.8497,1349,1.0
+COM-YIO,Pond Inlet,CYIO,Qikiqtaaluk,72.68949,-77.96894,1555,1.0
+COM-YLC,Kimmirut,CYLC,Qikiqtaaluk,62.84825,-69.87785,426,1.0
+COM-YRB,Resolute,CYRB,Qikiqtaaluk,74.7169,-94.9694,183,1.0
+COM-YRT,Rankin Inlet,CYRT,Kivalliq,62.8114,-92.1158,2975,1.0
+COM-YSK,Sanikiluaq,CYSK,Qikiqtaaluk,56.53689,-79.25022,1010,1.0
+COM-YTE,Kinngait,CYTE,Qikiqtaaluk,64.23,-76.5267,1396,1.0
+COM-YUT,Naujaat,CYUT,Kivalliq,66.52102,-86.22517,1225,1.0
+COM-YUX,Sanirajak,CYUX,Qikiqtaaluk,68.7761,-81.2425,891,1.0
+COM-YVM,Qikiqtarjuaq,CYVM,Qikiqtaaluk,67.54656,-64.03141,593,1.0
+COM-YXN,Whale Cove,CYXN,Kivalliq,62.24,-92.5981,470,1.0
+COM-YXP,Pangnirtung,CYXP,Qikiqtaaluk,66.14488,-65.71361,1504,1.0
+COM-YYH,Taloyoak,CYYH,Kitikmeot,69.5467,-93.5767,934,1.0
+COM-YZS,Coral Harbour,CYZS,Kivalliq,64.1933,-83.3594,1035,1.0

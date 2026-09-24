@@ -1,0 +1,7 @@
+airport_ident,field,value,source,source_url,retrieved_utc,note
+CYGZ,runway_length_ft,1675,Wikipedia infobox (cites Canada Flight Supplement),https://en.wikipedia.org/wiki/Grise_Fiord_Airport,2026-09-24T03:50:00Z,OurAirports runways.csv has no row for CYGZ; secondary source used and flagged
+CYGZ,runway_surface,gravel,Wikipedia infobox (cites Canada Flight Supplement),https://en.wikipedia.org/wiki/Grise_Fiord_Airport,2026-09-24T03:50:00Z,see above
+CYLC,runway_length_ft,1899,Wikipedia infobox (cites Canada Flight Supplement),https://en.wikipedia.org/wiki/Kimmirut_Airport,2026-09-24T03:50:00Z,OurAirports runways.csv has no row for CYLC; secondary source used and flagged
+CYLC,runway_surface,gravel,Wikipedia infobox (cites Canada Flight Supplement),https://en.wikipedia.org/wiki/Kimmirut_Airport,2026-09-24T03:50:00Z,see above
+CYXN,runway_surface,gravel,Wikipedia infobox (cites Canada Flight Supplement),https://en.wikipedia.org/wiki/Whale_Cove_Airport,2026-09-24T03:50:00Z,OurAirports surface = UNK; length 4000 ft from OurAirports retained (Wikipedia: 3937 ft)
+CYCS,runway_surface,gravel,Wikipedia infobox (cites Canada Flight Supplement),https://en.wikipedia.org/wiki/Chesterfield_Inlet_Airport,2026-09-24T03:50:00Z,OurAirports surface = UNK; length 3600 ft agrees with Wikipedia
