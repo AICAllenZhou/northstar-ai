@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { DisruptionEffect, StrategyName } from '../api/types'
 import { clock } from '../lib/time'
 import { SPEEDS, useStore } from '../state/store'
@@ -10,7 +11,8 @@ const RUNS: { id: StrategyName; label: string }[] = [
   { id: 'northstar', label: 'NORTHSTAR' },
 ]
 
-export function Timeline() {
+/** Play/pause, clock and scrubber always; speed and trace toggles fold behind "⋯" in simple mode. */
+export function Timeline({ simple = false }: { simple?: boolean }) {
   const t = useStore((s) => s.t)
   const playing = useStore((s) => s.playing)
   const speed = useStore((s) => s.speed)
@@ -23,14 +25,18 @@ export function Timeline() {
   const runs = useStore((s) => s.runs)
   const hasDisruptions = useStore((s) => (s.scenario?.scenario.disruptions.length ?? 0) > 0)
   const effects = useStore((s) => s.scenario?.disruption_effects) ?? EMPTY_EFFECTS
+  const [more, setMore] = useState(false)
+  const showExtras = !simple || more
   const pct = (t / 1440) * 100
   return (
-    <div className="timeline" role="group" aria-label="Timeline">
+    <div className={`timeline ${simple ? 'simple' : ''}`} role="group" aria-label="Timeline">
       <div className="tl-controls">
         <button className="btn play" onClick={playing ? pause : play} aria-label={playing ? 'Pause' : 'Play'}>{playing ? '❚❚' : '▶'}</button>
-        <div className="seg speed" aria-label="Playback speed">
-          {SPEEDS.map((sp) => <button key={sp} className={speed === sp ? 'on' : ''} onClick={() => setSpeed(sp)}>{sp / 60}×</button>)}
-        </div>
+        {showExtras && (
+          <div className="seg speed" aria-label="Playback speed">
+            {SPEEDS.map((sp) => <button key={sp} className={speed === sp ? 'on' : ''} onClick={() => setSpeed(sp)}>{sp / 60}×</button>)}
+          </div>
+        )}
         <div className="tl-clock mono">{clock(t, true)}</div>
       </div>
       <div className="tl-track">
@@ -42,15 +48,22 @@ export function Timeline() {
         </div>
         <input type="range" min={0} max={1440} step={1} value={Math.round(t)} onChange={(e) => { pause(); setTime(Number(e.target.value)) }} aria-label="Simulation time" style={{ ['--pct' as string]: `${pct}%` }} />
       </div>
-      <div className="seg trace" aria-label="Displayed run">
-        {RUNS.map((r) => {
-          const available = r.id === 'do_nothing' ? hasDisruptions || !!runs.do_nothing : !!runs[r.id]
-          return (
-            <button key={r.id} className={`${displayedRun === r.id ? 'on' : ''} run-${r.id}`} disabled={!available} onClick={() => setDisplayedRun(r.id)} title={available ? `Show the ${r.label} trace` : `${r.label} not computed yet`}>
-              {r.label}
-            </button>
-          )
-        })}
+      <div className="tl-right">
+        {showExtras && (
+          <div className="seg trace" aria-label="Displayed run">
+            {RUNS.map((r) => {
+              const available = r.id === 'do_nothing' ? hasDisruptions || !!runs.do_nothing : !!runs[r.id]
+              return (
+                <button key={r.id} className={`${displayedRun === r.id ? 'on' : ''} run-${r.id}`} disabled={!available} onClick={() => setDisplayedRun(r.id)} title={available ? `Show the ${r.label} trace` : `${r.label} not computed yet`}>
+                  {r.label}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {simple && (
+          <button type="button" className={`btn ghost tl-more ${more ? 'on' : ''}`} onClick={() => setMore((v) => !v)} aria-expanded={more} aria-label={more ? 'Hide speed and trace controls' : 'Show speed and trace controls'} title="Speed and displayed run">⋯</button>
+        )}
       </div>
     </div>
   )

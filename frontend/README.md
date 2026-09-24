@@ -24,6 +24,46 @@ On the first visit to `#/simulation` in a browser session a welcome dialog
 offers "Start guided demo" or "Explore on my own" (`sessionStorage`
 `northstar.onboarded`); `#/simulation?demo=1` skips it.
 
+## Simple mode and Advanced mode
+
+The command centre opens in **simple mode**: preset cards (or a compact
+scenario card), "What's happening" in human sentences, three or four status
+tiles, the primary action stack (Start guided demo · RUN NORTHSTAR AI · Run
+baseline first), the four-row *result card* and the *why card* for the top
+decision. The **Advanced** switch in the app header (persisted in
+`localStorage` `northstar.advanced`) reveals everything else: the disruption
+form, "Show impact if nobody reacts", the policy profile and weights, the
+ten-metric Before vs After table, solver diagnostics (calls, statuses, workers,
+lookahead, the replan log and the truthful cache line "computed by the engine
+at … in … ms · served from cache"), the full decision list with alternatives,
+mission ids, and the timeline speed and trace toggles (folded behind "⋯" in
+simple mode).
+
+## Guided demo
+
+`components/demoSteps.ts` builds the ten-step narrative live from one preset:
+the scenario is assembled one disruption at a time with
+`POST /api/scenario/load {scenario}` (same id/name/description/tags as the
+preset, `disruptions` = the subset introduced so far), so each step adds
+exactly one thing and the fully built scenario is byte-identical to the preset
+(the backend's content-keyed result cache therefore answers instantly after
+start-up warm-up). Steps: normal network → wildfire → airport closure →
+medical emergency → essential cargo → the damage (do-nothing card) →
+rule-based baseline → RUN NORTHSTAR AI (the *run moment*) → result card → why
+card + "See the 100-scenario results" (parks the demo on the Research page
+with a "Back to the demo" toast). The primary preset uses the fixed order
+`WF-1, AF-1, ME-1, CG-1`; any other preset maps its disruptions in start order
+into steps 2–5 (extras grouped into step 5, fewer steps when it has fewer
+than four).
+
+The **run moment** (`components/RunMoment.tsx`, also used by the panel
+buttons) is an overlay over the map: five stages advance with a live timer
+while the request is in flight (one per ~350 ms, never beyond the last), then
+the truthful line ("Solved in … ms · n solver calls" or "Result retrieved:
+computed by the same engine at start-up in … ms" when `cached`), then a replay
+of the real solver log from `replans[]` (one line per CP-SAT call, first 12),
+then "See the result". Reduced motion shows everything at once.
+
 ## Run
 
 ```
@@ -66,16 +106,22 @@ src/api/client.ts       fetch wrapper (ApiError with status/error/detail), all e
 src/state/store.ts      one Zustand store: network, scenario, impact, runs, compare,
                         decisions, experiments, playback clock, selection, errors
 src/lib/                time (minutes after 06:00 -> HH:MM), metric formatting and
-                        censoring, derived status-at-time / aircraft positions
+                        censoring, derived status-at-time / aircraft positions,
+                        humanize (human sentences for disruptions, missions, result
+                        rows, trade-offs and the decision checklist), prefs (Advanced flag)
 src/map/                MapView (imperative MapLibre updates from store subscriptions),
                         style (offline basemap), layers (routes, airports, rings,
                         disruption circles, mission arrows, highlight path), markers
                         (aircraft, labels with decluttering, mission icons), geo
                         (great-circle interpolation), InfoPanel, MapLegend
 src/router.ts           hash router (parse, navigate, useRoute, titles)
-src/components/         Header (app header), Onboarding, ErrorBanner (+DatasetError),
-                        StatusTiles, ScenarioPanel, DisruptionForm, MissionList, RunPanel,
-                        ComparePanel, DecisionsPanel, Timeline, DemoStepper (+demoSteps)
+src/components/         Header (app header + Advanced switch), Onboarding, ErrorBanner
+                        (+DatasetError), StatusTiles, Timeline (simple/advanced),
+                        simple mode: ScenarioSimple (+Happening), PresetCards, ActionStack,
+                        ResultCard, WhyCard (+WhyPanel), RunMoment;
+                        advanced mode: ScenarioPanel, DisruptionForm, MissionList, RunPanel
+                        (+RunStatus diagnostics), ComparePanel, DecisionsPanel;
+                        DemoStepper (+demoSteps: plan builder and the ten steps)
 src/site/               SiteHeader, SiteFooter, Home (+Section, Evidence, DataColumns),
                         NetworkLoop (+loopModel: projection, closures, cut-off and
                         reconnection paths), DataPage, AboutPage, copy
@@ -83,7 +129,8 @@ src/views/              CommandCenter, Research (+research/Charts), ResponsibleA
 src/styles/             tokens (colour, type scale, fonts), base, header, command, panels,
                         map, timeline, demo, research, responsible, site, onboarding
 public/preview/         command-center.png (copy of docs/screenshots/step-07.png for the teaser)
-scripts/demo_screenshots.mjs   Playwright: landing, pages, onboarding, Demo Mode, failure states
+scripts/demo_screenshots.mjs   Playwright: landing, pages, onboarding, preset cards, guided demo
+                               (incl. the run moment), simple/advanced mode, failure states
 ```
 
 ## Behaviour notes
@@ -98,7 +145,9 @@ scripts/demo_screenshots.mjs   Playwright: landing, pages, onboarding, Demo Mode
 - RUN NORTHSTAR AI runs the baseline first if it has not been run, so the
   Before/After panel and the `vs_baseline` fields in decisions are always
   populated. The "Do nothing" column comes from `/api/scenario/impact`, which
-  is fetched automatically before the first run.
+  is fetched automatically before the first run. Every run result carries
+  `cached`, `compute_ms` and `computed_at`; the interface states when the
+  computation really happened instead of pretending to wait.
 - Failure states: backend unreachable → red banner with Retry, controls
   disabled, last state kept (health is polled every 5 s and the UI re-boots
   when the backend returns); 503 dataset missing → full-screen message with the
@@ -119,7 +168,12 @@ node scripts/demo_screenshots.mjs                        # BASE_URL=http://local
 Writes, into `docs/screenshots/`: `home-hero.png`, `home-problem.png`,
 `home-how.png`, `home-evidence.png`, `home-data.png`, `home-mobile-390.png`
 (full page at 390×844), `data.png`, `about.png` (full page), `onboarding.png`,
-`app-header.png`, `step-01.png … step-10.png`, `research.png` (full page),
-`responsible-ai.png`, `command-center.png`, `research-empty.png`,
-`backend-down.png` and `narrow-1024.png`. It also checks that the landing has no
-horizontal overflow at 390, 768 and 1600 px and that no request leaves localhost.
+`app-header.png`, `presets.png` (simple mode, healthy), `step-01.png …
+step-10.png` plus `step-08-run.png` (the run moment during the solver-log
+replay), `research.png` (full page, reached through the demo's last button),
+`simple-mode.png`, `result-card.png`, `why-card.png`, `run-moment.png`,
+`advanced-mode.png`, `responsible-ai.png`, `command-center.png`,
+`research-empty.png`, `backend-down.png` and `narrow-1024.png`. It prints the
+wall time of the guided demo from step 1 to step 10, checks that the landing has
+no horizontal overflow at 390, 768 and 1600 px and that no request leaves
+localhost.

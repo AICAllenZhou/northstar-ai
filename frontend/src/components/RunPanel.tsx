@@ -1,14 +1,17 @@
 import type { RunResult } from '../api/types'
-import { reasonText } from '../lib/format'
+import { fmtNumber, reasonText } from '../lib/format'
+import { clock } from '../lib/time'
 import { selectControlsDisabled, useStore } from '../state/store'
 import { Expander, Spinner } from './ui'
 
+/** Advanced-mode run controls: impact button, baseline, NORTHSTAR (through the run moment), policy profile and weights, diagnostics. */
 export function RunPanel() {
   const policies = useStore((s) => s.policies)
   const policyId = useStore((s) => s.policyId)
   const setPolicyId = useStore((s) => s.setPolicyId)
   const runBaseline = useStore((s) => s.runBaseline)
-  const runNorthstar = useStore((s) => s.runNorthstar)
+  const startNorthstarRun = useStore((s) => s.startNorthstarRun)
+  const setFocusPanel = useStore((s) => s.setFocusPanel)
   const fetchImpact = useStore((s) => s.fetchImpact)
   const busy = useStore((s) => s.busy)
   const disabled = useStore(selectControlsDisabled)
@@ -31,7 +34,7 @@ export function RunPanel() {
         <span className="run-sub">rule-based dispatch{runs.baseline ? ' · done' : ''}</span>
       </button>
       <div className="run-ns-row">
-        <button className="run-btn northstar" disabled={disabled} onClick={() => void runNorthstar(policyId).catch(() => undefined)}>
+        <button className="run-btn northstar" disabled={disabled} onClick={() => startNorthstarRun(policyId, () => setFocusPanel('compare'))}>
           <span className="run-legend">{busy === 'northstar' ? <Spinner label="Solving…" /> : 'RUN NORTHSTAR AI'}</span>
           <span className="run-sub">OR-Tools CP-SAT · {policy?.name ?? policyId}{ns ? ' · done' : ''}</span>
         </button>
@@ -60,13 +63,20 @@ export function RunPanel() {
           </table>
         </Expander>
       )}
-      {ns && <RunStatus run={ns} unservedReasons={decisions.filter((d) => d.status === 'unserved').map((d) => ({ id: d.mission_id, label: d.label, reason: d.reasons.find((r) => r.code === 'UNSERVED_BECAUSE')?.text ?? reasonText((d.reasons[0]?.data?.reason as string) ?? '') }))} />}
+      {ns && <RunStatus run={ns} diagnostics unservedReasons={decisions.filter((d) => d.status === 'unserved').map((d) => ({ id: d.mission_id, label: d.label, reason: d.reasons.find((r) => r.code === 'UNSERVED_BECAUSE')?.text ?? reasonText((d.reasons[0]?.data?.reason as string) ?? '') }))} />}
       {runs.baseline && runs.baseline.status !== 'OK' && <RunStatus run={runs.baseline} unservedReasons={[]} />}
     </section>
   )
 }
 
-function RunStatus({ run, unservedReasons }: { run: RunResult; unservedReasons: { id: string; label: string; reason: string }[] }) {
+/** "2026-09-24T06:28:46Z" -> "2026-09-24 06:28:46 UTC" (the backend stamps in UTC; shown as such, never re-zoned). */
+function fmtWhen(iso: string | null): string {
+  if (!iso) return ''
+  const m = iso.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})/)
+  return m ? `${m[1]} ${m[2]} UTC` : iso
+}
+
+export function RunStatus({ run, unservedReasons, diagnostics = false }: { run: RunResult; unservedReasons: { id: string; label: string; reason: string }[]; diagnostics?: boolean }) {
   const unserved = run.assignments.filter((a) => a.status === 'unserved' && a.type !== 'passenger')
   const reasons = unservedReasons.length ? unservedReasons : unserved.map((a) => ({ id: a.mission_id, label: a.label, reason: reasonText(a.infeasible_reason) }))
   const name = run.strategy === 'northstar' ? 'NORTHSTAR' : run.strategy
@@ -81,18 +91,46 @@ function RunStatus({ run, unservedReasons }: { run: RunResult; unservedReasons: 
   }
   const solver = run.solver
   const nonOptimal = solver ? solver.statuses.filter((s) => s !== 'OPTIMAL' && s !== 'NO_FEASIBLE_SOLUTION') : []
+  const firstCall = run.replans.find((r) => r.solver)?.solver
+  const ms = run.compute_ms ?? null
   return (
     <div className={`state-card ${run.status === 'TIMEOUT' || run.status === 'PARTIAL' ? 'warn' : 'ns'}`}>
       <div className="status-line">
         <span className={`chip solid ${run.status === 'OK' ? 'ns' : 'warn'}`}>{run.status}</span>
         {solver && <span className="mono muted">{solver.calls} solver calls · {(solver.total_wall_ms / 1000).toFixed(1)} s · max {(solver.max_wall_ms / 1000).toFixed(1)} s</span>}
       </div>
+      {diagnostics && (
+        <div className="diag mono">
+          {firstCall && (firstCall.workers !== undefined || firstCall.lookahead_min !== undefined) && (
+            <div>{firstCall.workers !== undefined ? `${firstCall.workers} workers` : ''}{firstCall.workers !== undefined && firstCall.lookahead_min !== undefined ? ' · ' : ''}{firstCall.lookahead_min !== undefined ? `${firstCall.lookahead_min} min lookahead` : ''}</div>
+          )}
+          <div>
+            {run.cached
+              ? `computed by the engine at ${fmtWhen(run.computed_at)}${ms !== null ? ` in ${fmtNumber(ms)} ms` : ''} · served from cache`
+              : `computed live${ms !== null ? ` in ${fmtNumber(ms)} ms` : ''}${run.computed_at ? ` at ${fmtWhen(run.computed_at)}` : ''}`}
+          </div>
+        </div>
+      )}
       {(run.status === 'TIMEOUT' || run.status === 'PARTIAL' || nonOptimal.length > 0) && (
         <div className="warn-text">Solution found within the 10 s time limit, not proven optimal{nonOptimal.length ? ` (${nonOptimal.join(', ')})` : ''}.</div>
       )}
       {run.warnings.map((w) => <div key={w} className="warn-text">{w}</div>)}
       {reasons.length > 0 && (
         <ul>{reasons.map((r) => <li key={r.id} className="danger-text"><span className="mono">{r.id}</span> not served: {r.reason || 'no feasible aircraft'}</li>)}</ul>
+      )}
+      {diagnostics && run.replans.length > 0 && (
+        <Expander label={<span>Replan log · {run.replans.length} moments</span>} className="replans">
+          <ol className="replan-log mono">
+            {run.replans.map((r, i) => (
+              <li key={i}>
+                <span className="t">{clock(r.t)}</span>
+                <span className="trig">{r.triggers.map((x) => x.toLowerCase().replaceAll('_', ' ')).join(', ')}</span>
+                <span className="n">{r.assignments} assigned{r.unserved ? ` · ${r.unserved} unserved` : ''}</span>
+                {r.solver ? <span className={`chip ${r.solver.status === 'OPTIMAL' ? 'ns' : r.solver.status === 'NO_FEASIBLE_SOLUTION' ? 'base' : 'warn'}`}>{r.solver.status} {fmtNumber(r.solver.wall_ms)} ms</span> : <span className="muted">no solve</span>}
+              </li>
+            ))}
+          </ol>
+        </Expander>
       )}
     </div>
   )

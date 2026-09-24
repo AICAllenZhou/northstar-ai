@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { DatasetError, ErrorBanner } from './components/ErrorBanner'
 import { DemoStepper } from './components/DemoStepper'
+import { PRIMARY_PRESET } from './components/demoSteps'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Header } from './components/Header'
 import { Onboarding } from './components/Onboarding'
 import { usePlayback } from './hooks/usePlayback'
 import { hasOnboarded, markOnboarded } from './lib/onboarding'
-import { HREF, replaceHash, TITLES, useRoute, type Page } from './router'
+import { HREF, navigate, parseHash, replaceHash, TITLES, useRoute, type Page } from './router'
 import { useStore, type View } from './state/store'
 import { AboutPage } from './site/AboutPage'
 import { DataPage } from './site/DataPage'
@@ -18,6 +19,8 @@ import { Research } from './views/Research'
 
 const PAGE_VIEW: Record<Page, View> = { home: 'home', simulation: 'command', research: 'research', data: 'data', about: 'responsible' }
 
+interface DemoState { run: number; preset: string; step: number }
+
 export default function App() {
   const route = useRoute()
   const page = route.page
@@ -25,8 +28,12 @@ export default function App() {
   const datasetError = useStore((s) => s.datasetError)
   const bootstrap = useStore((s) => s.bootstrap)
   const pollHealth = useStore((s) => s.pollHealth)
-  // demoRun > 0 means the guided demo is open; the counter keys the stepper so a new start restarts it.
-  const [demoRun, setDemoRun] = useState(0)
+  const demoRequest = useStore((s) => s.demoRequest)
+  const requestDemo = useStore((s) => s.requestDemo)
+  // demo.run > 0 means the guided demo is open; the counter keys the stepper so a new start restarts it.
+  const [demo, setDemo] = useState<DemoState>({ run: 0, preset: PRIMARY_PRESET, step: 0 })
+  // A demo parked on the Research page ("See the 100-scenario results") can be resumed from a small toast.
+  const [resume, setResume] = useState<{ preset: string; step: number } | null>(null)
   const [onboard, setOnboard] = useState(false)
   // The command centre mounts on first visit and then stays mounted (the map keeps its state).
   const [simVisited, setSimVisited] = useState(sim)
@@ -64,26 +71,45 @@ export default function App() {
     if (!sim) return
     const id = setTimeout(() => {
       if (route.params.get('demo') === '1') {
-        markOnboarded()
-        setOnboard(false)
-        setDemoRun((n) => n + 1)
+        requestDemo()
         replaceHash(HREF.simulation)
       } else if (!hasOnboarded()) {
         setOnboard(true)
       }
     }, 0)
     return () => clearTimeout(id)
-  }, [route, sim])
+  }, [route, sim, requestDemo])
+
+  // Demo requests from anywhere (header, onboarding, preset cards, resume toast) start or restart the stepper.
+  useEffect(() => {
+    if (!demoRequest) return
+    const id = setTimeout(() => {
+      markOnboarded()
+      setOnboard(false)
+      setResume(null)
+      setDemo((d) => ({ run: d.run + 1, preset: demoRequest.preset ?? PRIMARY_PRESET, step: demoRequest.step ?? 0 }))
+      if (parseHash(window.location.hash).page !== 'simulation') navigate(HREF.simulation)
+    }, 0)
+    return () => clearTimeout(id)
+  }, [demoRequest])
+
+  // Panels that offer their own "Start guided demo" button hide it while the demo is running.
+  useEffect(() => { useStore.setState({ demoActive: demo.run > 0 }) }, [demo.run])
 
   if (datasetError) return <DatasetError detail={datasetError} />
 
-  const demo = demoRun > 0
-  const startDemo = () => setDemoRun((n) => n + 1)
-  const exitDemo = () => setDemoRun(0)
+  const demoOpen = demo.run > 0
+  const exitDemo = () => setDemo((d) => ({ ...d, run: 0 }))
+  const parkDemo = (step: number, preset: string) => {
+    useStore.getState().pause()
+    setResume({ preset, step })
+    setDemo((d) => ({ ...d, run: 0 }))
+    navigate(HREF.research)
+  }
 
   return (
     <div className={`app ${sim ? 'app-sim' : 'app-site'}`}>
-      {sim ? <Header onDemo={demo ? exitDemo : startDemo} demoActive={demo} /> : <SiteHeader page={page} />}
+      {sim ? <Header onDemo={demoOpen ? exitDemo : () => requestDemo()} demoActive={demoOpen} /> : <SiteHeader page={page} />}
       {sim && <ErrorBanner />}
       <div className="main">
         <div className="view" hidden={!sim}>
@@ -99,10 +125,17 @@ export default function App() {
         )}
       </div>
       {!sim && <SiteFooter />}
-      {demo && <ErrorBoundary label="Demo Mode"><DemoStepper key={demoRun} onExit={exitDemo} /></ErrorBoundary>}
-      {sim && onboard && !demo && (
+      {demoOpen && <ErrorBoundary label="Guided demo"><DemoStepper key={demo.run} preset={demo.preset} initialStep={demo.step} onExit={exitDemo} onPark={parkDemo} /></ErrorBoundary>}
+      {resume && !demoOpen && (
+        <div className="demo-resume" role="status">
+          <span>Guided demo paused at step {resume.step + 1}</span>
+          <button type="button" className="btn accent small" onClick={() => requestDemo(resume.preset, resume.step)}>Back to the demo</button>
+          <button type="button" className="btn ghost small" aria-label="Dismiss" onClick={() => setResume(null)}>✕</button>
+        </div>
+      )}
+      {sim && onboard && !demoOpen && (
         <Onboarding
-          onDemo={() => { markOnboarded(); setOnboard(false); startDemo() }}
+          onDemo={() => requestDemo()}
           onExplore={() => { markOnboarded(); setOnboard(false) }}
         />
       )}

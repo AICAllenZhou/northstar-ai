@@ -72,6 +72,8 @@ export const api = {
   metricsInfo: () => request<MetricsInfoResponse>('/metrics/info'),
   scenario: () => request<ScenarioState>('/scenario'),
   loadPreset: (preset_id: string) => request<ScenarioState>('/scenario/load', { method: 'POST', body: { preset_id } }),
+  /** Replace the session scenario with any Scenario object (the guided demo builds the preset one disruption at a time). */
+  loadScenario: (scenario: Scenario) => request<ScenarioState>('/scenario/load', { method: 'POST', body: { scenario } }),
   reset: () => request<ScenarioState>('/scenario/reset', { method: 'POST' }),
   addDisruption: (d: DisruptionInput) => request<ScenarioState>('/scenario/disruptions', { method: 'POST', body: d }),
   removeDisruption: (id: string) => request<ScenarioState>(`/scenario/disruptions/${encodeURIComponent(id)}`, { method: 'DELETE' }),

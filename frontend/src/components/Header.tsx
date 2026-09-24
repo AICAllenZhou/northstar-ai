@@ -1,4 +1,5 @@
 import { networkState, type NetworkState } from '../lib/derive'
+import { presetTitle } from '../lib/humanize'
 import { HREF } from '../router'
 import { useStore } from '../state/store'
 
@@ -15,7 +16,15 @@ const STATE_TEXT: Record<NetworkState, string> = {
 export function Header({ onDemo, demoActive }: { onDemo: () => void; demoActive: boolean }) {
   const disclaimer = useStore((s) => s.network?.disclaimer) ?? FALLBACK_DISCLAIMER
   const state = useStore((s) => networkState(s.scenario, s.displayedRun))
-  const scenarioName = useStore((s) => s.scenario?.scenario.name)
+  // One name everywhere: the preset's display title when a preset is loaded, else the scenario's own name.
+  const scenarioName = useStore((s) => {
+    const sc = s.scenario?.scenario
+    if (!sc) return undefined
+    const p = s.presets.find((x) => x.id === sc.id)
+    return p ? presetTitle(p) : sc.name
+  })
+  const advanced = useStore((s) => s.advanced)
+  const setAdvanced = useStore((s) => s.setAdvanced)
   return (
     <header className="hdr">
       <div className="hdr-row">
@@ -36,6 +45,11 @@ export function Header({ onDemo, demoActive }: { onDemo: () => void; demoActive:
               <div className="ann-sub">{STATE_TEXT[state]}</div>
             </div>
           </div>
+          <label className="switch" title="Show every control, metric and diagnostic">
+            <input type="checkbox" checked={advanced} onChange={(e) => setAdvanced(e.target.checked)} />
+            <span className="switch-track" aria-hidden><span className="switch-knob" /></span>
+            <span className="switch-label">Advanced</span>
+          </label>
           <button className={`btn accent demo-btn ${demoActive ? 'active' : ''}`} onClick={onDemo} aria-pressed={demoActive}>
             {demoActive ? 'Demo running · exit' : 'Start guided demo'}
           </button>

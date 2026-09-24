@@ -67,8 +67,8 @@ function Results() {
                 <span className="num">{imp === null ? '—' : `${Math.abs(imp).toFixed(0)}%`}</span>
                 <span className="imp-word">{word} mean</span>
               </p>
-              <p className="ev-vals"><span className="base">{fmtMean(c, c.baseline.mean)}</span> → <span className="ns">{fmtMean(c, c.northstar.mean)}</span></p>
-              <p className="ev-vals-l">baseline → NORTHSTAR, mean</p>
+              <p className="ev-vals"><span className="base">{fmtMean(c, c.baseline.mean)}</span> → <span className="ns">{fmtMean(c, c.northstar.mean)}</span>{(c.unit === 'flights' || c.unit === 'count') && <span className="ev-unit"> {c.unit === 'flights' ? 'flights ' : ''}per scenario</span>}</p>
+              <p className="ev-vals-l">baseline → NORTHSTAR, mean{c.unit === 'flights' || c.unit === 'count' ? ' per scenario' : ''}</p>
               <p className="ev-wins">Better in <b>{c.wins}</b> of {n} scenarios{c.ties ? ` · ${c.ties} ties` : ''}{c.losses ? ` · ${c.losses} losses` : ''}</p>
               <div className="ev-bar" aria-hidden>
                 <span className="w" style={{ width: `${(c.wins / n) * 100}%` }} />

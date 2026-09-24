@@ -307,6 +307,8 @@ export interface SolverCall {
   n_aircraft: number
   n_pairs: number
   policy: string
+  workers?: number
+  lookahead_min?: number
 }
 
 export interface Replan {
@@ -340,6 +342,12 @@ export interface RunResult {
   status: RunStatus
   metrics: Metrics
   assignments: MissionOutcome[]
+  /** True when the backend served this result from its content-keyed cache (e.g. the start-up warm-up). */
+  cached: boolean
+  /** Wall time of the real computation, whenever it happened. */
+  compute_ms: number | null
+  /** ISO timestamp of the real computation. */
+  computed_at: string | null
   trace: Trace
   replans: Replan[]
   solver: SolverSummary | null
@@ -444,6 +452,13 @@ export interface DecisionRecord {
   summary: string
 }
 
+export interface WarmupStatus {
+  state: 'pending' | 'running' | 'done' | string
+  done: number
+  total: number
+  presets: string[]
+}
+
 export interface HealthResponse {
   status: 'ok' | 'degraded'
   version: string
@@ -451,6 +466,7 @@ export interface HealthResponse {
   ortools_version: string
   offline: boolean
   dataset_error: string | null
+  warmup?: WarmupStatus | null
 }
 
 // ---- experiments -----------------------------------------------------------
