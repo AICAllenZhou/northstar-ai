@@ -50,8 +50,10 @@ def main() -> int:
             print(f"  precomputing presets: {done}/{total}", flush=True)
             last = done
         if state == "done":
+            pols = w.get("policies") or ["balanced"]
             print(f"  ready in {time.time() - t0:.0f} s: {len(w.get('presets', []))} presets precomputed "
-                  f"(do nothing, baseline, NORTHSTAR each) · OR-Tools {h.get('ortools_version')} · offline={h.get('offline')}")
+                  f"(do nothing, baseline, NORTHSTAR × {len(pols)} profile{'s' if len(pols) != 1 else ''} each) · "
+                  f"OR-Tools {h.get('ortools_version')} · offline={h.get('offline')}")
             return 0
         time.sleep(1.0)
     print("  backend never answered" if not answered else "  warm-up did not finish in time; the demo still works, first runs will solve live")

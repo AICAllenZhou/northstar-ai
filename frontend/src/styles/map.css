@@ -119,3 +119,9 @@
 /* The RUN moment's one beat: the map behind it dims to 60 % (300 ms), and lifts when the result is revealed. */
 .cc-dim { position: absolute; inset: 0; z-index: 25; background: rgba(7, 12, 20, 0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
 .cc-map.dimmed .cc-dim { opacity: 1; }
+
+/* Single-column layouts: the timeline is sticky at the bottom of the viewport and can cover the bottom
+   of the map, so the legend and the info panel live in the free top-left corner instead. */
+@media (max-width: 1279px) {
+  .map-corner { top: 10px; bottom: auto; flex-direction: column-reverse; }
+}

@@ -66,3 +66,7 @@
 .dataset-error h2 { font-size: 26px; margin: 8px 0 16px; }
 .dataset-error pre { background: var(--bg-2); border: 1px solid var(--danger); padding: 12px; border-radius: var(--r-2); white-space: pre-wrap; margin: 8px 0 16px; color: var(--danger); }
 .dataset-error p { margin-bottom: 8px; color: var(--ink-2); }
+
+/* Advanced switch locked while the guided demo is open. */
+.switch.locked { cursor: not-allowed; }
+.switch.locked .switch-track, .switch.locked .switch-label { opacity: 0.5; }

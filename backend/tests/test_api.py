@@ -112,3 +112,26 @@ def test_decision_record_response_fields_are_consistent(client):
         vb = r["vs_baseline"]
         if vb and vb["metric"] == "response_min" and vb["northstar_value"] is not None:
             assert vb["northstar_value"] == r["response_after_request_min"]
+
+
+def test_warm_up_precomputes_every_policy_profile():
+    """The start-up warm-up must cover do-nothing, baseline and NORTHSTAR for every policy profile, balanced first,
+    so that a live profile switch on stage is served from the same cache as the guided demo (V6)."""
+    import time
+    from northstar.api.session import Session
+    from northstar.config import POLICIES, get_policy
+    from northstar.scenarios.presets import get_preset
+
+    s = Session()
+    s.warm_up(preset_ids=["baffin_blizzard"])
+    assert s.warmup["total"] == 2 + len(POLICIES)
+    assert s.warmup["policies"][0] == "balanced"
+    t0 = time.time()
+    while s.warmup["state"] == "running" and time.time() - t0 < 120:
+        time.sleep(0.2)
+    assert s.warmup["state"] == "done", s.warmup
+    assert s.warmup["done"] == s.warmup["total"]
+    sc = get_preset("baffin_blizzard")
+    for pid in POLICIES:
+        r = s.compute(sc, "northstar", get_policy(pid))
+        assert r["cached"] is True and "metrics" in r, pid

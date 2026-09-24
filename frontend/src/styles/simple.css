@@ -218,3 +218,6 @@
   .run-moment { position: fixed; inset: 0; align-items: center; }
   .rm-line { grid-template-columns: 48px 90px 80px 1fr 60px; }
 }
+
+/* Mission rows are keyboard-operable (role=button); same ring as every other control. */
+.strip.mission.human:focus-visible { outline: 2px solid var(--ns); outline-offset: 2px; }

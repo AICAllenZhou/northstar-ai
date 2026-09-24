@@ -25,6 +25,7 @@ export function Header({ onDemo, demoActive }: { onDemo: () => void; demoActive:
   })
   const advanced = useStore((s) => s.advanced)
   const setAdvanced = useStore((s) => s.setAdvanced)
+  // The switch is locked while the guided demo is open (prop from App): switching modes would move the docked card.
   return (
     <header className="hdr">
       <div className="hdr-row">
@@ -45,8 +46,8 @@ export function Header({ onDemo, demoActive }: { onDemo: () => void; demoActive:
               <div className="ann-sub">{STATE_TEXT[state]}</div>
             </div>
           </div>
-          <label className="switch" title="Show every control, metric and diagnostic">
-            <input type="checkbox" checked={advanced} onChange={(e) => setAdvanced(e.target.checked)} />
+          <label className={`switch ${demoActive ? 'locked' : ''}`} title={demoActive ? 'Exit the guided demo to change modes' : 'Show every control, metric and diagnostic'}>
+            <input type="checkbox" checked={advanced} disabled={demoActive} aria-disabled={demoActive} onChange={(e) => setAdvanced(e.target.checked)} />
             <span className="switch-track" aria-hidden><span className="switch-knob" /></span>
             <span className="switch-label">Advanced</span>
           </label>

@@ -61,7 +61,7 @@ kept where it still holds.
 | ☑ | The guided demo walks ten steps with one button per step, building the scenario incrementally. | `DemoStepper` + `demoSteps.ts`; `docs/screenshots/step-01.png` … `step-10.png`; driver wall time 22 s excluding narration |
 | ☑ | Primary preset produces a visible NORTHSTAR-vs-baseline difference with an honest trade-off. | kivalliq_wildfire: communities still cut off 3 → 0, disconnected-hours 88.5 → 53, cancelled 8 → 0, cargo delay 2h → 5h30 (trade-off); `step-09.png` |
 | ☑ | Backup presets are one menu away inside the demo and produce visible differences. | Demo card scenario menu (Arctic weather, Medical emergency + aircraft failure); preset cards `presets.png` |
-| ☑ | Every preset result is precomputed at start-up by the same engine; custom scenarios solve live. | `warmup` in `/api/health`; "Precomputed ✓" chips; V5 preset performance table in the iteration log |
+| ☑ | Every preset result is precomputed at start-up by the same engine for all four policy profiles; custom scenarios solve live. | `warmup` in `/api/health`; "Precomputed ✓" chips; V5 preset performance table in the iteration log |
 | ☑ | Reset returns to the healthy network without a page refresh. | Reset button → `POST /api/scenario/reset`; driver asserts NORMAL + zero disruptions after open-in-simulator |
 | ☑ | Backend-unreachable state shows a clear message; the page reconnects by itself. | `docs/screenshots/backend-down.png`; health polled every 5 s |
 | ☑ | Cold start from a fresh clone works (dependencies, build, launcher, driver, tests). | Version 5 entry in `docs/OVERNIGHT_ITERATION_LOG.md` (timings recorded) |
@@ -72,7 +72,7 @@ kept where it still holds.
 
 | ✓ | Item | Evidence |
 |---|------|----------|
-| ☑ | All backend tests pass (`uv run pytest`). | 41 tests green on 2026-09-24 (loader, graph, simulation, baseline, metrics, optimizer, API, cache transparency, experiment summary, decision-record consistency) |
+| ☑ | All backend tests pass (`uv run pytest`). | 42 tests green on 2026-09-24 (loader, graph, simulation, baseline, metrics, optimizer, API, cache transparency, experiment summary, decision-record consistency, warm-up coverage of every profile) |
 | ☑ | Frontend type-checks, builds and lints clean. | `npm run build` (tsc -b && vite build) and `npx oxlint` clean at every sprint commit |
 | ☑ | Browser check passes: no external requests, no page errors, no horizontal overflow at 390 / 768 / 1024 / 1280 / 1440 / 1600 px. | `frontend/scripts/demo_screenshots.mjs`, run after every version |
 | ☑ | README explains purpose, research question, what you get, architecture, run, experiments, synthetic data, limitations. | `README.md` |

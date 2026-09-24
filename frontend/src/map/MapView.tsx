@@ -210,7 +210,7 @@ export function MapView() {
           const n = parked.get(p.airportId) ?? 1
           const i = slot.get(p.airportId) ?? 0
           slot.set(p.airportId, i + 1)
-          offset = [(i - (n - 1) / 2) * 17, 19]
+          offset = [(i - (n - 1) / 2) * 21, 19]   // 21 px: two-digit ids never touch
         }
         m.marker.setLngLat(p.lngLat).setOffset(offset)
         setAircraftState(m, p.status, p.bearing, hl.has(p.id), sel === p.id)

@@ -135,8 +135,6 @@ Narration and fallbacks: `docs/DEMO_SCRIPT.md`.
 
 - Label and marker collisions at busy hubs are reduced, not eliminated, at some
   zoom levels; the legend can be collapsed if it covers a label.
-- Toggling **Advanced** while the guided demo is open moves the demo card from
-  the right column to a bottom overlay; toggle it before or after the demo.
 - Below 1280 px the command centre is single-column with the demo card as a
   bottom overlay; usable, not the intended stage layout.
 - The medical-response metric ties in 69 of 100 scenarios; do not present it as
@@ -147,8 +145,6 @@ Narration and fallbacks: `docs/DEMO_SCRIPT.md`.
   button) until the page scrolls.
 - The mission rows under "What's happening" are clickable but not reachable by
   keyboard; every button, link, switch and the scrubber are.
-- Only the Balanced profile is precomputed for each preset; switching the profile
-  in Advanced mode solves live (about a second on the presets).
 
 ## 9. How to run it (exact)
 
@@ -157,7 +153,7 @@ git clone <repo> && cd northstar-ai
 git checkout waicy-overnight-polish
 scripts/demo.sh                      # installs backend deps with uv, builds the frontend once, serves http://localhost:8000/
 # tests and checks
-cd backend && uv run pytest          # 41 tests
+cd backend && uv run pytest          # 42 tests
 cd ../frontend && npm run build && npx oxlint
 BASE_URL=http://localhost:8000 node scripts/demo_screenshots.mjs   # every page, ten steps, failure states, no external requests
 # experiment
@@ -179,5 +175,6 @@ build, a screenshot set, a judge-style critique and a commit hash
 | — | Experiment runner: four solver buckets; results re-run at 5f0d9ab (0 hash differences); regression tests | 5f0d9ab, a8ede20 |
 | V4 | Make it credible: Research page as a story, per-scenario strips, open-in-simulator, solver accounting, Data/About depth, decision-record fix | e16f190 |
 | V5 | Make it competition-ready: declutter, accessibility floor, 1280 px check, cold-start acceptance, docs | af5a6f0 |
+| V6 | Stage hardening: every policy profile precomputed, Advanced locked during the demo, keyboard mission rows, parked-aircraft spacing, legend placement on narrow layouts | {{V6_COMMIT}} |
 
 Final branch: `waicy-overnight-polish`. Final commit: af5a6f0 (V5); the small commit after it records this hash in the log and this document, and is the branch tip.

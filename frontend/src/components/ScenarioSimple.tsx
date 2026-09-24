@@ -99,6 +99,8 @@ export function Happening() {
     const isSel = selected?.id === m.id
     return (
       <li key={m.id} className={`strip mission human type-${m.type} ${o?.status === 'unserved' ? 'unserved' : ''} ${isSel ? 'selected' : ''}`}
+        role="button" tabIndex={0} aria-pressed={isSel}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
         onClick={() => { select({ kind: 'mission', id: m.id }); setHighlight(o?.aircraft_id ? [o.aircraft_id] : [], o?.path ?? null) }}>
         <div className="strip-main">
           <div className="strip-label">{h.title}<span className="mono id-suffix">{m.id}</span></div>

@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from northstar.config import SOLVER_WORKERS_API, Policy, get_policy
+from northstar.config import POLICIES, SOLVER_WORKERS_API, Policy, get_policy
 from northstar.data.loader import load_network
 from northstar.explain.explain import explain
 from northstar.metrics.evaluate import evaluate
@@ -141,11 +141,15 @@ class Session:
         return result
 
     def warm_up(self, preset_ids: list[str] | None = None) -> None:
-        """Compute do-nothing, baseline and NORTHSTAR (balanced) for the presets in a background thread so that
-        the first click during a demo is served from cache. Same engine, same code path as a live run."""
+        """Compute do-nothing, baseline and NORTHSTAR for the presets in a background thread so that the first
+        click during a demo is served from cache. Same engine, same code path as a live run. Two passes: the
+        balanced profile for every preset first (the guided demo's path), then the other policy profiles, so a
+        live profile switch on stage is also instant. Custom scenarios are never precomputed."""
         from northstar.scenarios.presets import PRESETS
         ids = preset_ids or [p for p in PRESETS if p != "healthy"]
-        self.warmup = {"state": "running", "done": 0, "total": len(ids) * 3, "presets": ids}
+        others = [pid for pid in POLICIES if pid != "balanced"]
+        self.warmup = {"state": "running", "done": 0, "total": len(ids) * (3 + len(others)), "presets": ids,
+                       "policies": ["balanced", *others]}
 
         def work():
             try:
@@ -153,6 +157,11 @@ class Session:
                     sc = get_preset(pid)
                     for name, pol in (("do_nothing", None), ("baseline", None), ("northstar", get_policy("balanced"))):
                         self.compute(sc, name, pol)
+                        self.warmup["done"] += 1
+                for pid in ids:
+                    sc = get_preset(pid)
+                    for pol_id in others:
+                        self.compute(sc, "northstar", get_policy(pol_id))
                         self.warmup["done"] += 1
                 self.warmup["state"] = "done"
             except Exception as e:  # noqa: BLE001

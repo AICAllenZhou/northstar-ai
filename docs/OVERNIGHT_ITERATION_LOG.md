@@ -439,3 +439,52 @@ hub ("0903" at Cambridge Bay) at the default zoom, and flying aircraft still cro
 6. The presenter rehearsal (three timed run-throughs) is the one checklist item the build cannot tick.
 
 **Commit:** af5a6f0
+
+## Version 6 — "Stage hardening" (beyond the five mandated passes)
+
+**Observed problems (from V5):** the "do the weights matter?" moment on stage (switch the profile
+to Medical-first on the Kitikmeot preset and run again) was the one demo path that still solved
+live, because only the Balanced profile was precomputed; toggling Advanced while the guided demo
+was open moved the docked card to a bottom overlay; the "What's happening" mission rows were
+clickable but not keyboard-operable; two parked-aircraft ids could touch at the default zoom; on
+single-column layouts the sticky timeline could cover the legend button.
+
+**Decisions:** five small, verifiable fixes and nothing else. Warm-up now runs two passes:
+do-nothing, baseline and NORTHSTAR-Balanced for every preset first (the guided demo's path),
+then the other three profiles (Medical-first, Connectivity-first, Cost-conscious) for every preset, so
+a live profile switch is served from the same cache and declared as such; custom scenarios are still never precomputed. The
+Advanced switch is disabled while the guided demo is open, with a tooltip saying why. Mission rows
+take `role="button"`, a tab stop, Enter/Space and the standard focus ring. Parked aircraft fan out
+at 21 px instead of 17 px. Below 1280 px the legend and info panel move to the free top-left
+corner of the map. The final review's known-issues list and sprint table are updated.
+
+**Implementation:** `backend/northstar/api/session.py` (`warm_up`: two passes, `policies` in the
+health payload), `backend/tests/test_api.py` (`test_warm_up_precomputes_every_policy_profile`),
+`scripts/wait_ready.py` (ready line names the profile count), `frontend/src/components/{Header,
+ScenarioSimple}.tsx`, `frontend/src/map/MapView.tsx`, `frontend/src/styles/{header,simple,map}.css`,
+`docs/FINAL_WAICY_PRODUCT_REVIEW.md`.
+
+**Test results:** backend `uv run pytest` 42 passed (new: `test_warm_up_precomputes_every_policy_profile`,
+which runs the real warm-up on one preset and asserts every profile is then served from cache);
+`npm run build` 0 errors (JS 1,474 kB / 413 kB gzip, CSS 184 kB); `oxlint` clean; server
+restarted: warm-up 30 / 30 in 37 s (was 15 in about 10 s), health lists the four profiles;
+screenshot driver: no external requests, no page or console errors, no overflow at any width,
+guided demo 22.5 s net; the keyboard walk at step 9 now has 21 stops and includes the two mission
+rows ("Urgent medical evacuation…", "Essential cargo…") between Reset and the flights toggle;
+accessibility and contrast audits clean; reduced-motion pass unchanged. One process slip worth
+recording: the first two V6 screenshot runs used the previous bundle (a relative `cd` in a
+background shell and then a duplicate identifier that failed `tsc`); both were caught by reading
+the build log and the shots, and the third run is the one reported here.
+
+**Visual review (as a judge):** the Advanced switch reads as dimmed and unavailable while the demo card is docked, with
+a tooltip that says why; parked aircraft at Cambridge Bay, Rankin Inlet and Iqaluit sit apart with
+their ids legible; on the 1024 px single-column layout the "Legend" pill sits top-left, clear of
+the sticky timeline; the mission rows take focus with the same ring as every other control.
+Nothing else moved.
+
+**What still needs improvement (after the sprint):**
+1. The presenter rehearsal (three timed run-throughs with `docs/DEMO_SCRIPT.md`) is the one checklist item the build cannot tick.
+2. Flying aircraft still cross hub labels by nature; the labels sit above them and stay legible, but a purist would route the icons around.
+3. Warm-up now takes longer (30 computations instead of 15: 37 s on the development machine instead of about 10 s); the launcher waits and prints the time, and the demo script says not to start before "ready".
+
+**Commit:** _pending_

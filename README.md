@@ -97,7 +97,7 @@ PORT=8010 scripts/demo.sh       # another port; REBUILD=1 forces a frontend rebu
 scripts/dev.sh
 
 # tests and quality gates
-cd backend && uv run pytest                          # 41 tests
+cd backend && uv run pytest                          # 42 tests
 cd frontend && npm run build && npm run lint         # tsc + vite, oxlint
 
 # browser check: every page, the ten demo steps, failure states, no external requests
