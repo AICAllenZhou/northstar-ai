@@ -114,3 +114,12 @@ def test_policy_changes_objective(network):
     t1 = run(network, sc, NorthstarStrategy(policy=get_policy("balanced")))
     t2 = run(network, sc, NorthstarStrategy(policy=get_policy("cost_conscious")))
     assert t1.solver_calls[0]["objective"] != t2.solver_calls[0]["objective"]
+
+
+def test_northstar_flies_the_schedule_on_a_healthy_day(network):
+    """Sanity: with nothing wrong, the optimizer must not cancel or delay scheduled flights."""
+    sc = Scenario(id="healthy", name="healthy")
+    n = evaluate(run(network, sc, NorthstarStrategy()), network)
+    b = evaluate(run(network, sc, BaselineStrategy()), network)
+    assert n.cancelled_flights == 0 and n.passenger_delay_avg_min == 0 and n.reroutes == 0
+    assert n.distance_flown_km == b.distance_flown_km

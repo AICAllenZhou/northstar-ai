@@ -207,7 +207,7 @@ Constraints
 Objective (minimise, integer)
 ```
 Σ_medical   w_med[p_m]·(arr_o[m] − r_m)·STEP
-+ Σ_cargo   w_cargo·late[m]·STEP
++ Σ_cargo   w_cargo_late·late[m]·STEP + w_cargo_time·(arr_d[m] − r_m)·STEP
 + Σ_pax     w_pax·late[m]·STEP
 + Σ_{m restores a disconnected community} w_conn·(arr_d[m] − r_m)·STEP
 + Σ_m       pen_unserved[type_m]·(1 − served[m])
@@ -216,11 +216,17 @@ Objective (minimise, integer)
 + Σ_m       w_reroute·changed[m]
 ```
 Weights come from the policy profile (`config.py`). Default "Balanced":
-`w_med = {1: 20, 2: 12, 3: 6}` per minute, `w_cargo = 3`, `w_pax = 1`,
-`w_conn = 4` per minute per community, `pen_unserved = {medical: 200000,
-cargo: 40000, passenger: 8000}`, `w_dist = 2` per km·index, `w_risk = 3000`
-per unit risk, `w_reroute = 600`. Other profiles scale these. All values are
-declared assumptions and are shown in the UI.
+`w_med = {1: 20, 2: 12, 3: 6}` per minute of response, `w_cargo_late = 8` per
+minute past the deadline plus `w_cargo_time = 1` per minute from request to
+delivery, `w_pax = 1` per minute late, `w_conn = 4` per minute per community,
+`pen_unserved = {medical: 200000, cargo: 40000, passenger: 20000}`,
+`w_dist = 0.3` per km·cost-index, `w_risk = 3000` per unit path risk,
+`w_reroute = 600`. Other profiles scale these. All values are declared
+assumptions and are shown in the UI. The distance weight is deliberately
+small: a sanity test asserts that on a healthy day the optimizer flies the
+whole schedule rather than cancelling flights to save fuel (an earlier weight
+of 2.0 per km did exactly that, which is why it was changed before any
+experiment was run).
 
 Solver: `num_workers = 1`, `random_seed = 42`, `max_time_in_seconds = 10`.
 Status mapping: OPTIMAL/FEASIBLE → plan; INFEASIBLE or no solution →

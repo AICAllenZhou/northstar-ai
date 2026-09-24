@@ -40,13 +40,14 @@ class Policy(BaseModel):
     description: str
     # per minute of medical response, by priority
     w_medical_per_min: dict[int, float] = Field(default_factory=lambda: {1: 20.0, 2: 12.0, 3: 6.0})
-    w_cargo_late_per_min: float = 3.0
+    w_cargo_late_per_min: float = 8.0  # per minute past the cargo deadline
+    w_cargo_time_per_min: float = 1.0  # per minute from request to delivery (so cargo is not parked until its deadline)
     w_passenger_late_per_min: float = 1.0
     w_connectivity_per_min: float = 4.0  # per minute a disconnected community waits for the restoring flight
     pen_unserved: dict[str, float] = Field(
-        default_factory=lambda: {"medical": 200_000.0, "cargo": 40_000.0, "passenger": 8_000.0}
+        default_factory=lambda: {"medical": 200_000.0, "cargo": 40_000.0, "passenger": 20_000.0}
     )
-    w_distance_per_km_index: float = 2.0
+    w_distance_per_km_index: float = 0.3  # per km x aircraft cost index; low enough that no scheduled flight is ever worth cancelling to save fuel
     w_risk: float = 3_000.0  # per unit of summed path risk
     w_reroute: float = 600.0
     risk_path_lambda: float = 2.0  # path weight = distance * (1 + lambda * risk)

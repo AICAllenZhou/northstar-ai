@@ -181,6 +181,8 @@ class NorthstarStrategy:
             if mm.type == MissionType.medical:
                 w = int(round(SCALE * pol.w_medical_per_min.get(mm.priority, pol.w_medical_per_min[3])))
                 obj_terms.append(w * (arr_o[m] - mm.release_min))
+            if mm.type == MissionType.cargo:
+                obj_terms.append(int(round(SCALE * pol.w_cargo_time_per_min)) * (arr_d[m] - mm.release_min))
             due = mm.deadline_min if mm.type == MissionType.cargo else mm.scheduled_arrival_min
             if due is not None:
                 late = mdl.NewIntVar(0, H, f"late[{m}]")
