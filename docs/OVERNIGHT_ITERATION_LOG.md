@@ -250,4 +250,4 @@ is less theatrical (deliberate: the map is the show).
 6. The 1280–1439 px three-column case (docked card in a 440 px column) is implemented but not screenshot-verified; toggling Advanced mid-demo moves the card back to the overlay. V5 acceptance.
 7. `scripts/demo.sh` runs the smoke test against the shared session at start-up, so the first screen a presenter sees is the loaded primary preset, not the healthy network (V5).
 
-**Commit:** _pending_
+**Commit:** 40a7f6f
