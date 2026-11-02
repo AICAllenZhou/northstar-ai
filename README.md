@@ -6,7 +6,7 @@ A student research prototype built for WAICY.
 > NORTHSTAR AI is a research simulation and decision-support prototype. It is not
 > approved for real-world flight operations, medical decisions, or aviation dispatch.
 
-**Demo video (1:18):** <https://northstar-ai-demo.vercel.app> — source in
+**Demo video (1:18):** <https://northstar-ai-video.vercel.app> — source in
 [`demo-video/`](demo-video/) ([`northstar-ai-demo.mp4`](demo-video/northstar-ai-demo.mp4)).
 
 ## The problem and the research question
