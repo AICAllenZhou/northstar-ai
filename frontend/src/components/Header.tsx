@@ -1,5 +1,7 @@
 import { networkState, type NetworkState } from '../lib/derive'
-import { useStore, type View } from '../state/store'
+import { presetTitle } from '../lib/humanize'
+import { HREF } from '../router'
+import { useStore } from '../state/store'
 
 const FALLBACK_DISCLAIMER = 'NORTHSTAR AI is a research simulation and decision-support prototype. It is not approved for real-world flight operations, medical decisions, or aviation dispatch.'
 
@@ -10,35 +12,31 @@ const STATE_TEXT: Record<NetworkState, string> = {
   OPTIMIZED: 'NORTHSTAR plan shown',
 }
 
-const TABS: { id: View; label: string }[] = [
-  { id: 'command', label: 'Command Center' },
-  { id: 'research', label: 'Research Results' },
-  { id: 'responsible', label: 'Responsible AI' },
-]
-
+/** Compact application header, shown on the Simulation route only. */
 export function Header({ onDemo, demoActive }: { onDemo: () => void; demoActive: boolean }) {
-  const view = useStore((s) => s.view)
-  const setView = useStore((s) => s.setView)
   const disclaimer = useStore((s) => s.network?.disclaimer) ?? FALLBACK_DISCLAIMER
   const state = useStore((s) => networkState(s.scenario, s.displayedRun))
-  const scenarioName = useStore((s) => s.scenario?.scenario.name)
+  // One name everywhere: the preset's display title when a preset is loaded, else the scenario's own name.
+  const scenarioName = useStore((s) => {
+    const sc = s.scenario?.scenario
+    if (!sc) return undefined
+    const p = s.presets.find((x) => x.id === sc.id)
+    return p ? presetTitle(p) : sc.name
+  })
+  const advanced = useStore((s) => s.advanced)
+  const setAdvanced = useStore((s) => s.setAdvanced)
+  // The switch is locked while the guided demo is open (prop from App): switching modes would move the docked card.
   return (
     <header className="hdr">
       <div className="hdr-row">
-        <div className="brand">
+        <a className="brand" href={HREF.home} aria-label="NORTHSTAR AI home">
           <span className="brand-mark" aria-hidden />
           <div>
             <h1>NORTHSTAR AI</h1>
-            <p>Northern Aviation Resilience Command Center</p>
+            <p>Command center</p>
           </div>
-        </div>
-        <nav className="tabs" role="tablist" aria-label="Views">
-          {TABS.map((t) => (
-            <button key={t.id} role="tab" aria-selected={view === t.id} className={`tab ${view === t.id ? 'active' : ''}`} onClick={() => setView(t.id)}>
-              {t.label}
-            </button>
-          ))}
-        </nav>
+        </a>
+        <a className="site-link" href={HREF.home}>← Site</a>
         <div className="hdr-right">
           {scenarioName && <span className="scenario-name" title={scenarioName}>{scenarioName}</span>}
           <div className={`annunciator ${state.toLowerCase()}`} role="status" aria-label={`Network state ${state}`}>
@@ -48,7 +46,14 @@ export function Header({ onDemo, demoActive }: { onDemo: () => void; demoActive:
               <div className="ann-sub">{STATE_TEXT[state]}</div>
             </div>
           </div>
-          <button className={`btn demo-btn ${demoActive ? 'active' : ''}`} onClick={onDemo}>{demoActive ? 'Demo running' : 'Demo Mode'}</button>
+          <label className={`switch ${demoActive ? 'locked' : ''}`} title={demoActive ? 'Exit the guided demo to change modes' : 'Show every control, metric and diagnostic'}>
+            <input type="checkbox" checked={advanced} disabled={demoActive} aria-disabled={demoActive} onChange={(e) => setAdvanced(e.target.checked)} />
+            <span className="switch-track" aria-hidden><span className="switch-knob" /></span>
+            <span className="switch-label">Advanced</span>
+          </label>
+          <button className={`btn accent demo-btn ${demoActive ? 'active' : ''}`} onClick={onDemo} aria-pressed={demoActive}>
+            {demoActive ? 'Demo running · exit' : 'Start guided demo'}
+          </button>
         </div>
       </div>
       <div className="disclaimer" role="note">

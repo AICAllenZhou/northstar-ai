@@ -1,6 +1,6 @@
 # NORTHSTAR AI — Experiment summary
 
-Generated 2026-09-24T04:34:02Z · 100 paired scenarios · master seed 42 · policy `balanced` · commit `003bba7` · OR-Tools 9.15.6755
+Generated 2026-09-24T10:00:31Z · 100 paired scenarios · master seed 42 · policy `balanced` · commit `5f0d9ab` · OR-Tools 9.15.6755
 
 Every scenario was run once with the rule-based baseline and once with NORTHSTAR from identical initial states, through the same simulator and the same metrics function. Unserved missions are censored at the horizon end (24 h) for both strategies. See `docs/DATA_AND_EXPERIMENT_METHODOLOGY.md`.
 
@@ -33,7 +33,8 @@ Improvement % is relative to the baseline mean, signed so that positive is bette
 
 ## Solver
 
-- CP-SAT calls: 2438; proven optimal: 2284; feasible-not-optimal: 0; time-outs: 0; slowest call 3827 ms; mean NORTHSTAR run 2.12 s per scenario.
+- Replanning decisions: 2438. CP-SAT models solved: 2284 (proven optimal 2284; feasible-not-optimal 0; time-outs 0). Decisions with no reachable aircraft for any pending mission, returned as NO FEASIBLE SOLUTION without a solve: 154. The four buckets sum to the total.
+- Slowest solve 2878 ms; mean NORTHSTAR run 1.81 s per scenario.
 - Runs with a status other than OK: 0; assignments rejected by the simulator's feasibility check: 0.
 
 ## Sensitivity to the policy profile

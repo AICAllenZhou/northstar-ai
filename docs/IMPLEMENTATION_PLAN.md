@@ -298,3 +298,21 @@ in under five minutes with the backend and frontend started by one command.
    defence-in-depth check, now zero, with a regression test.
 5. **Airport count** is 28 (25 Nunavut + 3 southern gateways), slightly above
    the PRD's 15–25.
+6. **Solver accounting (overnight sprint, 2026-09-24).** The first experiment
+   summary reported "CP-SAT calls: 2438; proven optimal: 2284" and left 154
+   decisions unexplained. They were replanning moments at which no usable
+   aircraft could reach any pending mission, where the optimizer returns the
+   explicit NO FEASIBLE SOLUTION answer without building a model. The runner
+   now reports four buckets that sum to the total (`cpsat_calls`,
+   `optimal_calls`, `feasible_not_optimal_calls`, `timeout_calls`,
+   `no_feasible_calls`), a regression test guards the arithmetic and the
+   committed summary, and the experiment was re-run at commit `5f0d9ab`: 500
+   runs, zero trace-hash differences, zero changed metric cells. See
+   `docs/OVERNIGHT_ITERATION_LOG.md` (Version 3 → 4) and methodology §7.
+7. **Overnight productization sprint** (branch `waicy-overnight-polish`): a
+   landing website, Simple/Advanced modes, a ten-step incremental guided demo
+   with a truthful RUN moment (results are offered the instant they arrive; the
+   start-up cache is named on screen), map presentation and type system, and the
+   demo launcher waiting for warm-up. Each version's critique, tests and commit
+   hash are in `docs/OVERNIGHT_ITERATION_LOG.md`; none of it changed the
+   simulator, strategies, weights or datasets.

@@ -1,9 +1,10 @@
 // Thin fetch wrapper over the local FastAPI backend. All URLs are relative
 // ("/api/...") so the same build works behind the Vite proxy and when the
 // backend serves frontend/dist itself. No other network access exists.
+import type { FeatureCollection } from 'geojson'
 import type {
   CompareResponse, DecisionRecord, DisruptionInput, ExperimentSummary, HealthResponse, ImpactResponse,
-  MetricsInfoResponse, NetworkResponse, Policy, Preset, RunResult, ScenarioState,
+  MetricsInfoResponse, NetworkResponse, Policy, Preset, RunResult, Scenario, ScenarioState,
 } from './types'
 
 export class ApiError extends Error {
@@ -66,10 +67,14 @@ export const api = {
   health: () => request<HealthResponse>('/health'),
   network: () => request<NetworkResponse>('/network'),
   presets: () => request<Preset[]>('/presets'),
+  /** Full preset definition, disruptions in start order. */
+  presetDetail: (preset_id: string) => request<Scenario>(`/presets/${encodeURIComponent(preset_id)}`),
   policies: () => request<Policy[]>('/policies'),
   metricsInfo: () => request<MetricsInfoResponse>('/metrics/info'),
   scenario: () => request<ScenarioState>('/scenario'),
   loadPreset: (preset_id: string) => request<ScenarioState>('/scenario/load', { method: 'POST', body: { preset_id } }),
+  /** Replace the session scenario with any Scenario object (the guided demo builds the preset one disruption at a time). */
+  loadScenario: (scenario: Scenario) => request<ScenarioState>('/scenario/load', { method: 'POST', body: { scenario } }),
   reset: () => request<ScenarioState>('/scenario/reset', { method: 'POST' }),
   addDisruption: (d: DisruptionInput) => request<ScenarioState>('/scenario/disruptions', { method: 'POST', body: d }),
   removeDisruption: (id: string) => request<ScenarioState>(`/scenario/disruptions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
@@ -79,6 +84,10 @@ export const api = {
   compare: () => request<CompareResponse>('/compare'),
   decisions: () => request<DecisionRecord[]>('/decisions'),
   experimentsLatest: () => request<ExperimentSummary>('/experiments/latest'),
+  /** One generated scenario of the committed experiment (experiments/results/scenarios.jsonl), loadable with loadScenario. */
+  experimentScenario: (scenario_id: string) => request<Scenario>(`/experiments/scenarios/${encodeURIComponent(scenario_id)}`),
+  /** Natural Earth basemap layer as GeoJSON (the map style loads these by URL; the hero loop draws the coastline from the same data). */
+  basemap: (layer: 'countries' | 'provinces' | 'lakes') => request<FeatureCollection>(`/basemap/${layer}`),
 }
 
 export const EXPERIMENTS_CSV_URL = '/api/experiments/results.csv'

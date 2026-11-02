@@ -58,6 +58,9 @@ def main() -> int:
     except Exception:  # noqa: BLE001
         say("9. research: no experiment results yet")
     say("10. responsible AI disclaimer present:", "disclaimer" in call(a.base, "GET", "/api/network"))
+    # Leave the shared session as we found it: a healthy network. (The demo launcher relies on this.)
+    call(a.base, "POST", "/api/scenario/reset")
+    say("session reset to the healthy network")
     if not a.quiet:
         print("OK")
     return 0

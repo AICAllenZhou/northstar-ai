@@ -1,110 +1,90 @@
-import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { MetricComparison, MetricInfo, Stat } from '../../api/types'
-import { fmtMetric, pValue } from '../../lib/format'
-
+// Chart components for the Research page, plain SVG/CSS (no chart library):
+// the per-scenario paired-difference strip, the W/L/T bar and the solver bucket bar.
+// Every number drawn here comes from /api/experiments/latest; the arithmetic lives in paired.ts.
+import type { MetricComparison } from '../../api/types'
+import { fmtMetric, fmtNumber } from '../../lib/format'
 import { CHART } from './chartTheme'
+import { fmtDiff, median, type Buckets, type Outcome, type PairedDiff } from './paired'
 
-interface TipPayload { payload: Record<string, unknown>; dataKey?: string | number; name?: string; value?: number | string }
-
-function MiniTip({ active, payload, k, info }: { active?: boolean; payload?: TipPayload[]; k: string; info: MetricInfo }) {
-  if (!active || !payload?.length) return null
-  const p = payload[0].payload as { name: string; v: number; median: number | null; std: number | null }
+/** Thin three-segment bar: NORTHSTAR better · tie · baseline better. */
+export function WltBar({ wins, losses, ties, n }: { wins: number; losses: number; ties: number; n: number }) {
+  const total = Math.max(1, n)
   return (
-    <div className="chart-tip">
-      <div className="tip-title">{p.name}</div>
-      <div>mean <b>{fmtMetric(k, p.v, info)}</b></div>
-      <div>median {fmtMetric(k, p.median, info)} · sd {fmtMetric(k, p.std, info)}</div>
+    <div className="wlt-bar" role="img" aria-label={`${wins} NORTHSTAR better, ${ties} ties, ${losses} baseline better`}>
+      <span className="w" style={{ width: `${(wins / total) * 100}%` }} />
+      <span className="t" style={{ width: `${(ties / total) * 100}%` }} />
+      <span className="l" style={{ width: `${(losses / total) * 100}%` }} />
     </div>
   )
 }
 
-/** One small multiple per metric: baseline vs NORTHSTAR mean, own scale. */
-export function PairedMetricCard({ k, c, doNothing }: { k: string; c: MetricComparison; doNothing?: Stat }) {
-  const info: MetricInfo = { label: c.label, unit: c.unit, direction: c.direction }
-  const data = [
-    { name: 'Baseline', v: c.baseline.mean ?? 0, median: c.baseline.median, std: c.baseline.std },
-    { name: 'NORTHSTAR', v: c.northstar.mean ?? 0, median: c.northstar.median, std: c.northstar.std },
+const W = 800, H = 44, PAD = 12, LANES = 6, TICK_W = 1.8, TICK_H = 5, LANE_GAP = 1
+const COLOR: Record<Outcome, string> = { win: CHART.ns, loss: CHART.loss, tie: CHART.tie }
+
+/** One tick per scenario at NORTHSTAR − baseline, oriented so that left of zero is NORTHSTAR better.
+ *  Own symmetric scale per metric; ticks that land on the same pixel column stack across lanes so
+ *  overlaps are visible instead of hidden. Hover a tick for the scenario. */
+export function DiffStrip({ k, c, diffs }: { k: string; c: MetricComparison; diffs: PairedDiff[] }) {
+  const values = diffs.map((d) => d.oriented)
+  const D = Math.max(...values.map(Math.abs), Number.EPSILON)
+  const half = W / 2 - PAD
+  const x = (v: number) => W / 2 + (v / D) * half
+  const binCount = new Map<number, number>()
+  const placed = diffs.map((d) => {
+    const px = x(d.oriented)
+    const bin = Math.round(px / 3)
+    const i = binCount.get(bin) ?? 0
+    binCount.set(bin, i + 1)
+    return { d, px, lane: i % LANES }
+  })
+  const med = median(values)
+  const top = (H - (LANES * (TICK_H + LANE_GAP) - LANE_GAP)) / 2
+  const min = values.length ? Math.min(...values) : 0
+  const max = values.length ? Math.max(...values) : 0
+  const mag = (v: number) => fmtDiff(k, Math.abs(v), c).replace(/^[+−]/, '')
+  const tip = (d: PairedDiff) => d.outcome === 'tie'
+    ? `${d.id} · tie: baseline ${fmtMetric(k, d.baseline, c)}, NORTHSTAR ${fmtMetric(k, d.northstar, c)}`
+    : `${d.id} · baseline ${fmtMetric(k, d.baseline, c)} → NORTHSTAR ${fmtMetric(k, d.northstar, c)} (${fmtDiff(k, d.diff, c)}, ${d.outcome === 'win' ? 'NORTHSTAR better' : 'baseline better'})`
+  return (
+    <div className="pd-strip">
+      <svg className="pd-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`${c.label}: ${diffs.length} scenarios, ${c.wins} NORTHSTAR better, ${c.ties} ties, ${c.losses} baseline better`}>
+        <line x1={W / 2} x2={W / 2} y1={0} y2={H} stroke={CHART.ink3} strokeWidth={1} />
+        {placed.map(({ d, px, lane }) => (
+          <rect key={d.id} x={px - TICK_W / 2} y={top + lane * (TICK_H + LANE_GAP)} width={TICK_W} height={TICK_H} fill={COLOR[d.outcome]} opacity={d.outcome === 'tie' ? 1 : 0.9}>
+            <title>{tip(d)}</title>
+          </rect>
+        ))}
+        {med !== null && <rect x={x(med) - 1} y={H - 8} width={2} height={8} fill={CHART.ink}><title>median {fmtDiff(k, med, c)}</title></rect>}
+      </svg>
+      <div className="pd-axis mono" aria-hidden>
+        <span className="win">{min < 0 ? `◀ NORTHSTAR better by up to ${mag(min)}` : 'no scenario where NORTHSTAR was better'}</span>
+        <span>0</span>
+        <span className="loss">{max > 0 ? `baseline better by up to ${mag(max)} ▶` : 'no scenario where the baseline was better'}</span>
+      </div>
+    </div>
+  )
+}
+
+/** One stacked bar whose four segments visibly sum to the total number of replanning decisions. */
+export function SolverBar({ b }: { b: Buckets }) {
+  const segs = [
+    { key: 'optimal', label: 'proven optimal', v: b.optimal, color: CHART.ns },
+    { key: 'feasible', label: 'feasible, not proven optimal', v: b.feasible, color: '#ffb020' },
+    { key: 'timeout', label: 'time-outs', v: b.timeout, color: CHART.loss },
+    { key: 'nofeasible', label: 'no feasible solution, no solve', v: b.noFeasible ?? 0, color: CHART.base },
   ]
-  const imp = c.improvement_pct
-  const tone = imp === null || imp === 0 ? '' : imp > 0 ? 'good' : 'bad'
+  const total = Math.max(1, b.calls)
   return (
-    <div className="mcard">
-      <div className="mcard-label">{c.label}<span className="mcard-unit"> · {c.unit}, mean · {c.direction === 'lower' ? 'lower is better' : 'higher is better'}</span></div>
-      <div className="mcard-top">
-        <div className={`mcard-imp ${tone}`}>{imp === null ? '—' : `${imp > 0 ? '−' : imp < 0 ? '+' : ''}${Math.abs(imp).toFixed(1)}%`}</div>
-        <div className="mcard-p">{imp !== null && (imp > 0 ? 'better with NORTHSTAR' : imp < 0 ? 'worse with NORTHSTAR' : 'no change')}<br />{pValue(c.p_value)}{c.significant ? ', significant' : ', not significant'}</div>
+    <div className="solver-bar-wrap">
+      <div className="solver-bar" role="img" aria-label={segs.map((s) => `${s.v} ${s.label}`).join(', ')}>
+        {segs.filter((s) => s.v > 0).map((s) => (
+          <span key={s.key} style={{ width: `${(s.v / total) * 100}%`, background: s.color }} title={`${s.label}: ${fmtNumber(s.v)}`}>{s.v / total >= 0.05 ? fmtNumber(s.v) : ''}</span>
+        ))}
       </div>
-      <div className="mcard-chart">
-        <ResponsiveContainer width="100%" height={86}>
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 70, bottom: 4, left: 0 }} barCategoryGap={8}>
-            <XAxis type="number" hide domain={[0, (max: number) => max * 1.05]} />
-            <YAxis type="category" dataKey="name" width={78} tick={{ fill: CHART.ink2, fontSize: 11.5 }} axisLine={false} tickLine={false} interval={0} />
-            <Tooltip cursor={{ fill: 'rgba(255,255,255,0.04)' }} content={<MiniTip k={k} info={info} />} />
-            <Bar dataKey="v" isAnimationActive={false} maxBarSize={18} radius={[0, 4, 4, 0]}>
-              <Cell fill={CHART.base} />
-              <Cell fill={CHART.ns} />
-              <LabelList dataKey="v" position="right" fill={CHART.ink} fontSize={12} formatter={(v) => fmtMetric(k, Number(v), info)} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="mcard-foot">
-        <span>W / L / T <b>{c.wins} / {c.losses} / {c.ties}</b></span>
-        {doNothing && doNothing.mean !== null && <span className="muted">do nothing {fmtMetric(k, doNothing.mean, info)}</span>}
-      </div>
+      <ul className="solver-legend">
+        {segs.map((s) => <li key={s.key}><i style={{ background: s.color }} />{s.key === 'nofeasible' && b.noFeasible === null ? 'not reported' : fmtNumber(s.v)} {s.label}</li>)}
+        <li className={`sum ${b.sums ? 'ok' : 'bad'}`}>{b.sums ? '= ' : '≠ '}{fmtNumber(b.calls)} replanning decisions</li>
+      </ul>
     </div>
-  )
-}
-
-export interface WinLossRow { key: string; label: string; wins: number; losses: number; ties: number }
-
-function SegLabel(props: { x?: unknown; y?: unknown; width?: unknown; height?: unknown; value?: unknown }) {
-  const w = Number(props.width), h = Number(props.height), x = Number(props.x), y = Number(props.y)
-  const v = Number(props.value)
-  if (!Number.isFinite(w) || w < 24 || !v) return null
-  return <text x={x + w / 2} y={y + h / 2} dy={4} textAnchor="middle" fill="#fff" fontSize={11.5} fontWeight={700}>{v}</text>
-}
-
-function WLTip({ active, payload }: { active?: boolean; payload?: TipPayload[] }) {
-  if (!active || !payload?.length) return null
-  const r = payload[0].payload as unknown as WinLossRow
-  return (
-    <div className="chart-tip">
-      <div className="tip-title">{r.label}</div>
-      <div><span className="sw-sq" style={{ background: CHART.ns }} /> NORTHSTAR better: <b>{r.wins}</b></div>
-      <div><span className="sw-sq" style={{ background: CHART.tie }} /> tie: <b>{r.ties}</b></div>
-      <div><span className="sw-sq" style={{ background: CHART.loss }} /> baseline better: <b>{r.losses}</b></div>
-    </div>
-  )
-}
-
-export function WinLossChart({ rows, n }: { rows: WinLossRow[]; n: number }) {
-  const ticks = [0, Math.round(n / 4), Math.round(n / 2), Math.round((3 * n) / 4), n]
-  return (
-    <>
-      <div className="chart-legend" aria-label="Legend">
-        <span><i style={{ background: CHART.ns }} />NORTHSTAR better</span>
-        <span><i style={{ background: CHART.tie }} />Tie</span>
-        <span><i style={{ background: CHART.loss }} />Baseline better</span>
-      </div>
-    <ResponsiveContainer width="100%" height={rows.length * 34 + 40}>
-      <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 0 }} barCategoryGap={10}>
-        <CartesianGrid horizontal={false} stroke={CHART.grid} />
-        <XAxis type="number" domain={[0, n]} ticks={ticks} tick={{ fill: CHART.ink3, fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis type="category" dataKey="label" width={270} tick={{ fill: CHART.ink2, fontSize: 12 }} axisLine={false} tickLine={false} interval={0} />
-        <Tooltip content={<WLTip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-
-        <Bar dataKey="wins" name="NORTHSTAR better" stackId="a" fill={CHART.ns} stroke={CHART.surface} strokeWidth={2} isAnimationActive={false} maxBarSize={20}>
-          <LabelList dataKey="wins" content={SegLabel} />
-        </Bar>
-        <Bar dataKey="ties" name="Tie" stackId="a" fill={CHART.tie} stroke={CHART.surface} strokeWidth={2} isAnimationActive={false} maxBarSize={20}>
-          <LabelList dataKey="ties" content={SegLabel} />
-        </Bar>
-        <Bar dataKey="losses" name="Baseline better" stackId="a" fill={CHART.loss} stroke={CHART.surface} strokeWidth={2} isAnimationActive={false} maxBarSize={20} radius={[0, 4, 4, 0]}>
-          <LabelList dataKey="losses" content={SegLabel} />
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-    </>
   )
 }

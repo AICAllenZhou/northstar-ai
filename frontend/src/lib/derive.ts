@@ -77,6 +77,8 @@ export interface AircraftPosition {
   bearing: number | null
   status: 'ground' | 'flying' | 'failed' | 'stranded'
   airportId: string | null
+  /** Origin of the leg in flight (null on the ground). */
+  legFrom: string | null
   legTo: string | null
   missionId: string | null
 }
@@ -93,7 +95,7 @@ export function aircraftPositionsAt(network: NetworkResponse, run: RunResult | n
   for (const ac of network.aircraft) {
     if (!run || !snap) {
       const p = apt.get(ac.home_airport_id) ?? [0, 0]
-      out.push({ id: ac.id, lngLat: p, bearing: null, status: failedNoRun.has(ac.id) ? 'failed' : 'ground', airportId: ac.home_airport_id, legTo: null, missionId: null })
+      out.push({ id: ac.id, lngLat: p, bearing: null, status: failedNoRun.has(ac.id) ? 'failed' : 'ground', airportId: ac.home_airport_id, legFrom: null, legTo: null, missionId: null })
       continue
     }
     const leg = run.trace.legs.find((l) => l.aircraft_id === ac.id && l.depart_min <= t && t < l.arrive_min)
@@ -102,15 +104,15 @@ export function aircraftPositionsAt(network: NetworkResponse, run: RunResult | n
       const a = apt.get(leg.from_airport), b = apt.get(leg.to_airport)
       if (a && b) {
         const f = (t - leg.depart_min) / Math.max(1, leg.arrive_min - leg.depart_min)
-        out.push({ id: ac.id, lngLat: interpolateGC(a, b, f), bearing: bearing(interpolateGC(a, b, Math.max(0, f - 0.01)), b), status: 'flying', airportId: null, legTo: leg.to_airport, missionId: leg.mission_id })
+        out.push({ id: ac.id, lngLat: interpolateGC(a, b, f), bearing: bearing(interpolateGC(a, b, Math.max(0, f - 0.01)), b), status: 'flying', airportId: null, legFrom: leg.from_airport, legTo: leg.to_airport, missionId: leg.mission_id })
         continue
       }
     }
     if (s) {
-      out.push({ id: ac.id, lngLat: [s.lon, s.lat], bearing: null, status: s.status === 'flying' ? 'ground' : s.status, airportId: s.airport_id, legTo: null, missionId: s.mission_id })
+      out.push({ id: ac.id, lngLat: [s.lon, s.lat], bearing: null, status: s.status === 'flying' ? 'ground' : s.status, airportId: s.airport_id, legFrom: null, legTo: null, missionId: s.mission_id })
     } else {
       const p = apt.get(ac.home_airport_id) ?? [0, 0]
-      out.push({ id: ac.id, lngLat: p, bearing: null, status: 'ground', airportId: ac.home_airport_id, legTo: null, missionId: null })
+      out.push({ id: ac.id, lngLat: p, bearing: null, status: 'ground', airportId: ac.home_airport_id, legFrom: null, legTo: null, missionId: null })
     }
   }
   return out
@@ -129,6 +131,23 @@ export function usedRouteIds(network: NetworkResponse, run: RunResult | null | u
     const id = byKey.get(routeKey(l.from_airport, l.to_airport))
     if (id) out.add(id)
   }
+  return out
+}
+
+/** Direction in which the displayed run flies each used route: +1 = as stored
+ *  (origin → destination), −1 = reversed; a route flown both ways takes the
+ *  majority direction (ties → +1). Drives the map's directional flow. */
+export function usedRouteDirections(network: NetworkResponse, run: RunResult | null | undefined): Map<string, 1 | -1> {
+  const out = new Map<string, 1 | -1>()
+  if (!run) return out
+  const byKey = new Map(network.routes.map((r) => [routeKey(r.origin_airport_id, r.destination_airport_id), r]))
+  const tally = new Map<string, number>()
+  for (const l of run.trace.legs) {
+    const r = byKey.get(routeKey(l.from_airport, l.to_airport))
+    if (!r) continue
+    tally.set(r.id, (tally.get(r.id) ?? 0) + (l.from_airport === r.origin_airport_id ? 1 : -1))
+  }
+  for (const [id, n] of tally) out.set(id, n < 0 ? -1 : 1)
   return out
 }
 

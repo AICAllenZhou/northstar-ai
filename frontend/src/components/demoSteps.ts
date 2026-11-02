@@ -1,143 +1,273 @@
-import { changedAircraft } from '../lib/derive'
-import { fmtMetric, metricCell } from '../lib/format'
-import { clock, duration, signedDuration } from '../lib/time'
+// The guided demo: a ten-step narrative built live from one preset, one
+// disruption at a time (POST /api/scenario/load with the subset so far).
+// Steps carry a `kind` so the stepper can render a card body (damage card,
+// RUN button, result card, why card) under the caption.
+import type { Disruption, DisruptionType, Scenario } from '../api/types'
+import { changedAircraft, statusAt } from '../lib/derive'
+import { fmtNumber } from '../lib/format'
+import {
+  airportName, capitalize, communityName, communityOf, describeDisruption, fmtPop, isNorthHub, listWords,
+  nearestMedicalHub, numberWord, pickDecision, plural, shortType, biggestGainSentence,
+} from '../lib/humanize'
+import { clock } from '../lib/time'
 import { useStore, type StoreState } from '../state/store'
 
+export type StepKind = 'plain' | 'damage' | 'run' | 'result' | 'why'
+
 export interface DemoStep {
+  id: string
+  /** Display headline (rendered uppercase in Plex Condensed). */
   title: string
+  kind: StepKind
   /** Performs the API calls / UI changes for the step. Throws on failure. */
-  run: (presetId: string) => Promise<void>
-  /** What the judge is looking at, computed from the live state. */
+  run: () => Promise<void>
+  /** What the judge is looking at, computed from the live state (≤ 35 words, one idea). */
   caption: (s: StoreState) => string
 }
 
-export const BACKUP_PRESETS = ['baffin_blizzard', 'kitikmeot_medevac_failure', 'cargo_shortage', 'cascading_failure']
+export interface DemoGroup { ids: string[]; title: string }
+export interface DemoPlan { presetId: string; preset: Scenario; groups: DemoGroup[] }
+
 export const PRIMARY_PRESET = 'kivalliq_wildfire'
+export const BACKUP_PRESETS = ['baffin_blizzard', 'kitikmeot_medevac_failure', 'cargo_shortage', 'cascading_failure']
+
+/** Fixed narrative order for the primary preset. */
+const KIVALLIQ_ORDER: [string, string][] = [['WF-1', 'Wildfire'], ['AF-1', 'Hub closed, aircraft down'], ['ME-1', 'Medical emergency'], ['CG-1', 'Essential cargo']]
+
+const TYPE_TITLE: Record<DisruptionType, string> = {
+  wildfire: 'Wildfire', airport_closure: 'Airport closure', severe_weather: 'Severe weather',
+  aircraft_failure: 'Aircraft failure', medical_emergency: 'Medical emergency', essential_cargo_request: 'Essential cargo',
+}
+
+function groupTitle(ds: Disruption[]): string {
+  const types = [...new Set(ds.map((d) => TYPE_TITLE[d.type] ?? d.type))]
+  if (types.length === 1) return ds.length > 1 ? `${capitalize(numberWord(ds.length))} ${types[0].toLowerCase()} events` : types[0]
+  if (types.length === 2) return `${types[0]} + ${types[1].toLowerCase()}`
+  return `${capitalize(numberWord(ds.length))} more events`
+}
+
+/** Steps 2–5 for any preset: the primary uses its fixed order; others map disruptions in start order, extras grouped into the last step. */
+export function planFor(preset: Scenario): DemoPlan {
+  const ds = preset.disruptions
+  if (preset.id === PRIMARY_PRESET && KIVALLIQ_ORDER.every(([id]) => ds.some((d) => d.id === id))) {
+    const groups = KIVALLIQ_ORDER.map(([id, title]) => ({ ids: [id], title }))
+    const extra = ds.filter((d) => !KIVALLIQ_ORDER.some(([id]) => id === d.id)).map((d) => d.id)
+    if (extra.length) groups[groups.length - 1].ids.push(...extra)
+    return { presetId: preset.id, preset, groups }
+  }
+  const groups: DemoGroup[] = []
+  if (ds.length <= 4) for (const d of ds) groups.push({ ids: [d.id], title: groupTitle([d]) })
+  else {
+    for (const d of ds.slice(0, 3)) groups.push({ ids: [d.id], title: groupTitle([d]) })
+    const rest = ds.slice(3)
+    groups.push({ ids: rest.map((d) => d.id), title: groupTitle(rest) })
+  }
+  return { presetId: preset.id, preset, groups }
+}
+
+export async function buildPlan(presetId: string): Promise<DemoPlan> {
+  const preset = await useStore.getState().getPresetDetail(presetId)
+  return planFor(preset)
+}
+
+// ---- captions ----------------------------------------------------------------
 
 const S = () => useStore.getState()
-const name = (s: StoreState, id: string | null | undefined) => s.network?.airports.find((a) => a.id === id)?.community_name ?? id ?? '—'
-const cname = (s: StoreState, id: string | null | undefined) => s.network?.communities.find((c) => c.id === id)?.name ?? id ?? '—'
+const byId = (plan: DemoPlan) => new Map(plan.preset.disruptions.map((d) => [d.id, d]))
 
-export const DEMO_STEPS: DemoStep[] = [
-  {
-    title: 'Healthy network',
-    run: async () => { S().setView('command'); await S().resetScenario() },
-    caption: (s) => {
-      const n = s.network
-      if (!n) return 'A normal day in the network.'
-      return `A normal day. ${n.airports.length} airports (${n.hubs.medical.length} hubs, 3 southern gateways off-screen), ${n.communities.length} fly-in communities, ${n.aircraft.length} aircraft and ${n.schedule.length} scheduled flights. Every community is connected. Real geography from OurAirports, Statistics Canada and Natural Earth; the fleet and schedule are synthetic.`
+/** Clock used while a step builds the scenario: never runs backwards through the day. */
+function focusTime(plan: DemoPlan, upTo: number): number {
+  const m = byId(plan)
+  let t = 0
+  for (const g of plan.groups.slice(0, upTo + 1)) for (const id of g.ids) t = Math.max(t, m.get(id)?.start_min ?? 0)
+  return t
+}
+
+function closedHubsAt(s: StoreState, t: number): string[] {
+  const st = statusAt(s.scenario, null, t, s.network)
+  return [...st.closedAirports].filter((id) => { const a = s.network?.airports.find((x) => x.id === id); return a && isNorthHub(a) })
+}
+
+function eventCaption(d: Disruption, s: StoreState, t: number): string {
+  const n = s.network
+  const e = s.scenario?.disruption_effects.find((x) => x.id === d.id)
+  switch (d.type) {
+    case 'aircraft_failure': {
+      const ac = n?.aircraft.find((a) => a.id === d.target_ids[0])
+      const hubs = closedHubsAt(s, t)
+      const remaining = (n?.aircraft.length ?? 0) - statusAt(s.scenario, null, t, n).failedAircraft.size
+      const parts: string[] = []
+      if (hubs.length === 1) { const a = n?.airports.find((x) => x.id === hubs[0]); parts.push(`The ${a?.region ?? ''} hub is closed.`) }
+      else if (hubs.length > 1) parts.push(`${listWords(hubs.map((h) => airportName(n, h)))} hubs are closed.`)
+      if (ac) {
+        const atClosedHub = hubs.includes(ac.home_airport_id)
+        parts.push(atClosedHub ? `Its ${shortType(ac.type)} is grounded.` : `${airportName(n, ac.home_airport_id)}'s ${ac.type} is grounded.`)
+      } else parts.push(`${d.label || 'An aircraft'} is grounded.`)
+      parts.push(`${capitalize(numberWord(remaining))} aircraft remain for the whole territory.`)
+      return parts.join(' ')
+    }
+    case 'medical_emergency': {
+      const com = communityOf(n, d.target_ids[0])
+      const p = Number(d.params.priority ?? 1)
+      const hub = com ? nearestMedicalHub(n, com.airport_id) : null
+      const closed = hub ? closedHubsAt(s, d.start_min).includes(hub.id) : false
+      const hubText = hub ? (closed ? `The nearest hospital hub, ${hub.community_name}, is closed.` : `The nearest hospital hub is ${hub.community_name}.`) : ''
+      return `${clock(d.start_min)} — ${com?.name ?? communityName(n, d.target_ids[0])}${com?.population_2021 ? ` (population ${fmtPop(com.population_2021)})` : ''} calls a priority-${p} medical evacuation. ${hubText}`.trim()
+    }
+    case 'essential_cargo_request': {
+      const com = communityOf(n, d.target_ids[0])
+      const kg = Number(d.params.payload_kg ?? 0)
+      const what = String(d.params.cargo ?? 'essential supplies')
+      // The mission created by this request carries the absolute deadline; params.deadline_min counts from the request.
+      const mission = (s.scenario?.missions ?? []).find((m) => m.type === 'cargo' && m.release_min === d.start_min && (m.community_id === d.target_ids[0] || m.dest === com?.airport_id))
+      const deadline = mission?.deadline_min ?? (d.params.deadline_min !== undefined ? d.start_min + Number(d.params.deadline_min) : null)
+      const dl = deadline !== null ? ` by ${clock(deadline)}` : ''
+      const urgent = (s.scenario?.missions ?? []).filter((m) => m.type !== 'passenger').length
+      const hubs = closedHubsAt(s, t).length
+      const failed = statusAt(s.scenario, null, t, n).failedAircraft.size
+      const tally = [
+        `${capitalize(numberWord(urgent))} urgent ${urgent === 1 ? 'mission' : 'missions'}`,
+        hubs ? `${numberWord(hubs)} closed ${hubs === 1 ? 'hub' : 'hubs'}` : null,
+        failed ? `${numberWord(failed)} aircraft fewer` : null,
+      ].filter(Boolean).join(', ')
+      return `${clock(d.start_min)} — ${com?.name ?? communityName(n, d.target_ids[0])}${com?.population_2021 ? ` (population ${fmtPop(com.population_2021)})` : ''} needs ${fmtNumber(kg)} kg of ${what}${dl}. ${tally}.`
+    }
+    default: {
+      const h = describeDisruption(d, e, n, { hubNote: true })
+      return `${clock(d.start_min)} — ${h.text} until ${clock(h.end, true)}.`
+    }
+  }
+}
+
+function groupCaption(plan: DemoPlan, gi: number, s: StoreState): string {
+  const m = byId(plan)
+  const t = focusTime(plan, gi)
+  const ds = plan.groups[gi].ids.map((id) => m.get(id)).filter((d): d is Disruption => !!d)
+  if (!s.scenario || s.scenario.scenario.id !== plan.presetId) return 'Adding the next event…'
+  return ds.map((d) => eventCaption(d, s, t)).join(' ')
+}
+
+function solverFacts(s: StoreState): string {
+  const n = s.runs.northstar
+  if (!n) return ''
+  const calls = n.replans.filter((r) => r.solver)
+  const counts = new Map<string, number>()
+  for (const r of calls) counts.set(r.solver!.status, (counts.get(r.solver!.status) ?? 0) + 1)
+  const statusText = [...counts.entries()].map(([k, v]) => `${v} ${k}`).join(', ')
+  const ms = n.compute_ms ?? n.solver?.total_wall_ms ?? null
+  const where = n.cached
+    ? `Result retrieved: computed by the same engine at start-up${ms !== null ? ` in ${fmtNumber(ms)} ms` : ''}.`
+    : `Solved${ms !== null ? ` in ${fmtNumber(ms)} ms` : ''}.`
+  return `${where} ${plural(calls.length, 'solver call')} (${statusText}); ${n.replans.length} replanning moments across the day.`
+}
+
+// ---- steps -----------------------------------------------------------------------
+
+const showScenarioOnly = () => useStore.setState({ displayedRun: null, playing: false, highlightAircraft: [], highlightPath: null, selected: null, expandedDecision: null })
+
+export function buildSteps(plan: DemoPlan): DemoStep[] {
+  const allIds = plan.groups.flatMap((g) => g.ids)
+  const upTo = (gi: number) => plan.groups.slice(0, gi + 1).flatMap((g) => g.ids)
+  const ensureAll = () => S().loadDemoScenario(plan.presetId, allIds)
+
+  const steps: DemoStep[] = [
+    {
+      id: 'normal', title: 'Normal network', kind: 'plain',
+      run: async () => { S().setView('command'); await S().resetScenario(); S().setTime(0) },
+      caption: (s) => {
+        const n = s.network
+        if (!n) return 'A normal day in the network.'
+        return `A normal day: ${n.communities.length} fly-in communities, ${n.aircraft.length} aircraft, ${n.schedule.length} scheduled flights. Every community is connected. Real geography from public data; the fleet, schedule and events are synthetic.`
+      },
     },
-  },
-  {
-    title: 'Trigger the disruption',
-    run: async (preset) => { S().setView('command'); await S().loadPreset(preset); S().setTime(0) },
-    caption: (s) => {
-      const sc = s.scenario?.scenario
-      if (!sc) return 'Loading the scenario…'
-      const list = sc.disruptions.map((d) => `${d.label || d.type} (${clock(d.start_min)})`).join('; ')
-      return `${sc.name}. ${sc.description} Disruptions: ${list}. Nothing has been analysed yet: the badge says WARNING.`
-    },
-  },
-  {
-    title: 'Impact before any intervention',
-    run: async () => { S().setView('command'); await S().fetchImpact(true) },
+  ]
+
+  plan.groups.forEach((g, gi) => {
+    steps.push({
+      id: `add-${gi}`, title: g.title, kind: 'plain',
+      run: async () => {
+        S().setView('command')
+        await S().loadDemoScenario(plan.presetId, upTo(gi))
+        showScenarioOnly()
+        S().setTime(focusTime(plan, gi))
+      },
+      caption: (s) => groupCaption(plan, gi, s),
+    })
+  })
+
+  steps.push({
+    id: 'damage', title: 'The damage', kind: 'damage',
+    run: async () => { S().setView('command'); await ensureAll(); await S().fetchImpact(true) },
     caption: (s) => {
       const imp = s.impact
       if (!imp) return 'Simulating the day with the published schedule only…'
       const m = imp.do_nothing.metrics
-      const news = imp.new_missions.map((x) => `${x.type === 'medical' ? 'medevac from' : 'cargo to'} ${cname(s, x.community_id)} (${x.status})`).join(', ')
-      return `If nobody reacts: a peak of ${m.disconnected_communities_peak} disconnected communities at ${clock(imp.peak_disconnected_t)} (shown on the map), ${fmtMetric('h', m.disconnected_community_hours, { label: '', unit: 'h', direction: 'lower' })} of disconnected-community time, ${m.cancelled_flights} cancelled flights. New missions: ${news || 'none'}.`
+      return `If nobody reacts: at ${clock(imp.peak_disconnected_t)}, ${numberWord(m.disconnected_communities_peak)} communities have no air service; ${numberWord(m.disconnected_communities_end)} ${m.disconnected_communities_end === 1 ? 'is' : 'are'} still cut off at the end of the day.`
     },
-  },
-  {
-    title: 'Baseline response',
-    run: async () => { S().setView('command'); await S().runBaseline(); S().setTime(0); S().setSpeed(120); S().play() },
+  })
+
+  steps.push({
+    id: 'baseline', title: 'Rule-based baseline', kind: 'plain',
+    run: async () => { S().setView('command'); await ensureAll(); await S().runBaseline(); S().setTime(0); S().setSpeed(120); S().play() },
     caption: (s) => {
       const b = s.runs.baseline
       if (!b) return 'Running the rule-based dispatcher…'
       const m = b.metrics
-      const med = metricCell('medical_response_avg_min', m).text
-      return `Rule-based dispatcher (the non-AI control): nearest free compatible aircraft, shortest open route, retry when an aircraft frees up. Result: medical response ${med}, ${m.disconnected_community_hours} disconnected-community hours, ${m.cancelled_flights} cancelled flights, ${duration(m.passenger_delay_avg_min)} mean passenger delay. Grey routes are the ones it flew.`
+      return `Scheduled flights keep their aircraft; emergencies get the nearest free compatible aircraft, shortest open route, retry when one frees up. Result: ${m.disconnected_communities_end} communities still cut off · ${fmtNumber(m.disconnected_community_hours, 1)} disconnected-community hours · ${plural(m.cancelled_flights, 'flight')} cancelled.`
     },
-  },
-  {
-    title: 'RUN NORTHSTAR AI',
-    run: async () => { S().setView('command'); S().pause(); await S().runNorthstar(); S().setTime(0) },
-    caption: (s) => {
-      const n = s.runs.northstar
-      if (!n) return 'NORTHSTAR is solving…'
-      const sol = n.solver
-      const pol = n.policy?.name ?? s.policyId
-      return `NORTHSTAR formulates each replanning moment as a constraint-optimization model (OR-Tools CP-SAT): which aircraft serves which mission, in what order, on which open route, minimising weighted medical response, disconnected-community time, cargo and passenger delay, distance and reroutes (“${pol}” weights). ${sol ? `${sol.calls} solver calls, ${(sol.total_wall_ms / 1000).toFixed(1)} s in total` : ''}. Status: ${n.status}.`
-    },
-  },
-  {
-    title: 'What changed',
+  })
+
+  steps.push({
+    id: 'run', title: 'Run NORTHSTAR AI', kind: 'run',
     run: async () => {
       const s = S()
       s.setView('command')
-      s.setDisplayedRun('northstar')
-      s.setHighlight(changedAircraft(s.runs.baseline, s.runs.northstar), null)
-      s.setTime(0); s.setSpeed(120); s.play()
+      await ensureAll()
+      s.pause()
+      if (!S().runs.baseline) await S().runBaseline()
+      S().setDisplayedRun(S().runs.northstar ? 'northstar' : 'baseline')
+      S().setTime(0)
     },
-    caption: (s) => {
-      const ch = changedAircraft(s.runs.baseline, s.runs.northstar)
-      const types = ch.map((id) => `${id} (${s.network?.aircraft.find((a) => a.id === id)?.type ?? ''})`).join(', ')
-      return `Playing the NORTHSTAR plan. Pulsing aircraft carry different work than in the baseline: ${types || 'no reassignment needed'}. Teal routes are the ones NORTHSTAR used; dashed red routes are closed; amber rings mark communities without service at that moment.`
+    caption: (s) => s.runs.northstar ? solverFacts(s)
+      : 'NORTHSTAR re-plans every time something changes: which aircraft flies which mission, in what order, on which open route — under range, runway, capacity and closure constraints.',
+  })
+
+  steps.push({
+    id: 'result', title: 'Result', kind: 'result',
+    run: async () => {
+      const s = S()
+      s.setView('command')
+      await ensureAll()
+      if (!S().runs.northstar) throw new Error('Press RUN NORTHSTAR AI first.')
+      const st = S()
+      st.setDisplayedRun('northstar')
+      st.setHighlight(changedAircraft(st.runs.baseline, st.runs.northstar), null)
+      st.setTime(0); st.setSpeed(120); st.play()
     },
-  },
-  {
-    title: 'Before vs after',
-    run: async () => { const s = S(); s.setView('command'); s.pause(); s.setTime(1440); s.setFocusPanel('compare') },
     caption: (s) => {
       const c = s.compare
-      if (!c?.baseline || !c.northstar) return 'Comparing the three responses…'
-      const info = c.metric_info
-      const better: string[] = [], worse: string[] = []
-      for (const k of ['disconnected_community_hours', 'medical_response_avg_min', 'cargo_delay_avg_min', 'passenger_delay_avg_min', 'cancelled_flights', 'recovery_time_min']) {
-        const d = c.deltas[k]
-        if (!d || d.delta === 0) continue
-        const txt = `${info[k]?.label.toLowerCase() ?? k} ${info[k]?.unit === 'min' ? signedDuration(d.delta) : (d.delta > 0 ? '+' : '') + d.delta}${info[k]?.unit && info[k].unit !== 'min' ? ' ' + info[k].unit : ''}`
-        ;(d.better ? better : worse).push(txt)
-      }
-      return `Do nothing | Baseline | NORTHSTAR, same simulator, same metric function. Versus the baseline NORTHSTAR improved: ${better.join('; ') || 'nothing'}. ${worse.length ? `It did worse on: ${worse.join('; ')} — a real trade-off, shown in red, not hidden.` : 'No metric got worse in this scenario.'}`
+      if (!c?.baseline || !c.northstar) return 'Comparing the two responses…'
+      // The card itself carries the trade-off line, so the caption states the gain once.
+      return biggestGainSentence(c) ?? 'NORTHSTAR did not beat the baseline on any headline metric in this scenario.'
     },
-  },
-  {
-    title: 'Explain one decision',
+  })
+
+  steps.push({
+    id: 'why', title: 'Why, and the evidence', kind: 'why',
     run: async () => {
       const s = S()
       s.setView('command')
-      const d = s.decisions.find((x) => x.mission_type === 'medical') ?? s.decisions[0]
+      s.pause()
+      const d = pickDecision(s.decisions)
       if (!d) throw new Error('NORTHSTAR produced no decision record to explain for this scenario.')
+      s.setDisplayedRun('northstar')
       s.highlightDecision(d)
-      s.setFocusPanel('decisions')
     },
-    caption: (s) => {
-      const d = s.decisions.find((x) => x.mission_id === s.expandedDecision) ?? s.decisions.find((x) => x.mission_type === 'medical') ?? s.decisions[0]
-      if (!d) return 'No decision to explain.'
-      const rej = d.alternatives.filter((a) => a.verdict === 'rejected').length
-      const busy = d.alternatives.filter((a) => a.verdict === 'busy').length
-      const worse = d.alternatives.filter((a) => a.verdict === 'worse').length
-      return `${d.summary} Every reason is a structured field computed from the feasibility table and the solver's choice; no language model writes them. ${d.alternatives.length} alternatives were considered: ${rej} infeasible, ${busy} busy with other work, ${worse} feasible but slower. The chosen path is highlighted on the map (${(d.path ?? []).map((p) => name(s, p)).join(' → ')}).`
-    },
-  },
-  {
-    title: 'Aggregate experiment',
-    run: async () => { S().setView('research'); await S().loadExperiments() },
-    caption: (s) => {
-      const e = s.experiments
-      if (s.experimentsMissing) return 'The 100-scenario experiment has not been run on this machine yet. The Research view shows the exact command to generate it.'
-      if (!e) return 'Loading the experiment summary…'
-      const c = e.comparisons[e.primary_policy]
-      const dc = c.disconnected_community_hours, md = c.medical_response_avg_min, pd = c.passenger_delay_avg_min
-      const tr = e.tradeoffs[e.primary_policy]
-      return `${e.n_scenarios} generated disruption scenarios (seed ${e.seed}), each run once with the baseline and once with NORTHSTAR from an identical start. NORTHSTAR won ${dc.wins}/${e.n_scenarios} on disconnected-community hours (${dc.improvement_pct}% lower mean), ${md.wins} on medical response (${md.losses} losses, ${md.ties} ties), ${pd.wins} on passenger delay. Metrics where the baseline won more often: ${tr.length ? tr.map((k) => c[k].label).join(', ') : 'none'}. Sign-test p-values are shown per metric.`
-    },
-  },
-  {
-    title: 'Responsible AI',
-    run: async () => { S().setView('responsible') },
-    caption: (s) => `${s.network?.disclaimer ?? 'NORTHSTAR AI is a research simulation and decision-support prototype.'} Humans stay in the loop: NORTHSTAR recommends, nothing is applied automatically; every weight is visible; real and synthetic data are labelled; failure states are explicit; results are not claimed to generalise beyond this simulation.`,
-  },
-]
+    caption: () => 'Every reason below is a field from the optimizer’s feasibility table and its solution. No language model writes them.',
+  })
+
+  return steps
+}
+
+/** The step index of the first "add" step (used when the backup preset changes). */
+export const FIRST_ADD_STEP = 1

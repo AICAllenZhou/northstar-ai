@@ -307,6 +307,8 @@ export interface SolverCall {
   n_aircraft: number
   n_pairs: number
   policy: string
+  workers?: number
+  lookahead_min?: number
 }
 
 export interface Replan {
@@ -340,6 +342,12 @@ export interface RunResult {
   status: RunStatus
   metrics: Metrics
   assignments: MissionOutcome[]
+  /** True when the backend served this result from its content-keyed cache (e.g. the start-up warm-up). */
+  cached: boolean
+  /** Wall time of the real computation, whenever it happened. */
+  compute_ms: number | null
+  /** ISO timestamp of the real computation. */
+  computed_at: string | null
   trace: Trace
   replans: Replan[]
   solver: SolverSummary | null
@@ -435,6 +443,10 @@ export interface DecisionRecord {
   path: string[] | null
   depart_min: number | null
   response_min: number | null
+  /** Request time (minutes since 06:00); response_min is the pick-up clock time, not a duration. */
+  release_min?: number | null
+  /** Pick-up minus request, in minutes (the duration a reader expects). */
+  response_after_request_min?: number | null
   complete_min: number | null
   decided_at_min: number | null
   reasons: DecisionReason[]
@@ -444,6 +456,13 @@ export interface DecisionRecord {
   summary: string
 }
 
+export interface WarmupStatus {
+  state: 'pending' | 'running' | 'done' | string
+  done: number
+  total: number
+  presets: string[]
+}
+
 export interface HealthResponse {
   status: 'ok' | 'degraded'
   version: string
@@ -451,6 +470,7 @@ export interface HealthResponse {
   ortools_version: string
   offline: boolean
   dataset_error: string | null
+  warmup?: WarmupStatus | null
 }
 
 // ---- experiments -----------------------------------------------------------
@@ -490,10 +510,15 @@ export interface CensoredCounts {
 }
 
 export interface SolverStats {
+  /** Replanning decisions NORTHSTAR recorded (all four buckets below sum to this). */
   calls: number
+  /** Decisions where a CP-SAT model was built and solved (= optimal + feasible-not-optimal + time-outs). Absent in older summaries. */
+  cpsat_calls?: number
   optimal_calls: number
   feasible_not_optimal_calls: number
   timeout_calls: number
+  /** Decisions at which no usable aircraft could reach any pending mission: the explicit NO FEASIBLE SOLUTION answer, no solve. Absent in older summaries. */
+  no_feasible_calls?: number
   max_wall_ms: number
   mean_run_wall_s: number
   runs_not_ok: number
@@ -511,6 +536,8 @@ export interface ExperimentSummary {
   metric_info: Record<string, MetricInfo>
   primary_metrics: string[]
   git_commit: string | null
+  /** True when the working tree had uncommitted changes when the experiment ran. */
+  git_dirty?: boolean
   python: string
   ortools_version: string
   platform: string

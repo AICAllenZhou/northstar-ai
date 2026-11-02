@@ -67,3 +67,71 @@ def test_no_feasible_solution_surfaces(client):
     d = client.get("/api/decisions").json()
     assert any(r["status"] == "unserved" and r["reasons"] for r in d)
     client.post("/api/scenario/reset")
+
+
+def test_preset_detail_and_experiment_scenario_loading(client):
+    r = client.get("/api/presets/kivalliq_wildfire"); assert r.status_code == 200
+    d = r.json(); assert [x["id"] for x in d["disruptions"]] == ["AF-1", "WF-1", "ME-1", "CG-1"]  # start order
+    assert client.get("/api/presets/nope").status_code == 404
+    r = client.get("/api/experiments/scenarios/gen-42-001")
+    if r.status_code == 200:
+        sc = r.json(); assert sc["id"] == "gen-42-001"
+        r2 = client.post("/api/scenario/load", json={"scenario": sc}); assert r2.status_code == 200
+        assert r2.json()["scenario"]["id"] == "gen-42-001"
+    else:
+        assert r.status_code == 404
+    client.post("/api/scenario/reset")
+
+
+def test_result_cache_is_transparent_and_identical(client):
+    client.post("/api/scenario/load", json={"preset_id": "baffin_blizzard"})
+    a = client.post("/api/run/northstar", json={"policy_id": "balanced"}).json()
+    assert a["cached"] is False and a["compute_ms"] is not None
+    client.post("/api/scenario/load", json={"preset_id": "healthy"})
+    client.post("/api/scenario/load", json={"preset_id": "baffin_blizzard"})
+    b = client.post("/api/run/northstar", json={"policy_id": "balanced"}).json()
+    assert b["cached"] is True
+    assert b["metrics"] == a["metrics"] and b["assignments"] == a["assignments"]
+    h = client.get("/api/health").json(); assert "warmup" in h
+    client.post("/api/scenario/reset")
+
+
+def test_decision_record_response_fields_are_consistent(client):
+    """response_min is a clock time (minutes since 06:00); response_after_request_min is the duration and must equal
+    the vs_baseline NORTHSTAR value for completed medevacs. Guards the why-card against reading a clock time as a
+    duration (found in the overnight sprint: the Chesterfield Inlet medevac showed "6h after request" for a 4h response)."""
+    client.post("/api/scenario/load", json={"preset_id": "kivalliq_wildfire"})
+    client.post("/api/run/baseline")
+    client.post("/api/run/northstar", json={"policy_id": "balanced"})
+    recs = client.get("/api/decisions").json()
+    meds = [r for r in recs if r["mission_type"] == "medical" and r["status"] == "completed"]
+    assert meds
+    for r in meds:
+        assert r["release_min"] is not None and r["response_min"] is not None
+        assert r["response_after_request_min"] == r["response_min"] - r["release_min"] >= 0
+        vb = r["vs_baseline"]
+        if vb and vb["metric"] == "response_min" and vb["northstar_value"] is not None:
+            assert vb["northstar_value"] == r["response_after_request_min"]
+
+
+def test_warm_up_precomputes_every_policy_profile():
+    """The start-up warm-up must cover do-nothing, baseline and NORTHSTAR for every policy profile, balanced first,
+    so that a live profile switch on stage is served from the same cache as the guided demo (V6)."""
+    import time
+    from northstar.api.session import Session
+    from northstar.config import POLICIES, get_policy
+    from northstar.scenarios.presets import get_preset
+
+    s = Session()
+    s.warm_up(preset_ids=["baffin_blizzard"])
+    assert s.warmup["total"] == 2 + len(POLICIES)
+    assert s.warmup["policies"][0] == "balanced"
+    t0 = time.time()
+    while s.warmup["state"] == "running" and time.time() - t0 < 120:
+        time.sleep(0.2)
+    assert s.warmup["state"] == "done", s.warmup
+    assert s.warmup["done"] == s.warmup["total"]
+    sc = get_preset("baffin_blizzard")
+    for pid in POLICIES:
+        r = s.compute(sc, "northstar", get_policy(pid))
+        assert r["cached"] is True and "metrics" in r, pid

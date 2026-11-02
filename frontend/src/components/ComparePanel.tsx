@@ -29,7 +29,7 @@ export function ComparePanel() {
   return (
     <section className="panel compare" ref={ref}>
       <div className="panel-title">
-        <span className="eyebrow">Before vs After</span>
+        <h2 className="eyebrow">Before vs After</h2>
         {compare?.northstar && <span className="eyebrow src">{compare.policy_id}</span>}
       </div>
       {!any ? (

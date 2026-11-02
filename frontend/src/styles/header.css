@@ -5,19 +5,18 @@
 
 .hdr { flex: none; background: var(--bg-1); border-bottom: 1px solid var(--line); }
 .hdr-row { height: var(--header-h); display: flex; align-items: center; gap: 20px; padding: 0 16px; }
-.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; color: inherit; text-decoration: none; }
+.brand:hover h1 { color: var(--ns); }
 .brand-mark {
   width: 26px; height: 26px; flex: none; background: var(--ns);
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
   box-shadow: 0 0 14px var(--ns-dim);
 }
-.brand h1 { font-size: 19px; font-weight: 800; letter-spacing: 0.16em; line-height: 1.05; }
-.brand p { font-size: 11.5px; color: var(--ink-2); letter-spacing: 0.04em; margin-top: 1px; white-space: nowrap; }
+.brand h1 { font: 700 20px/1.05 var(--font-display); letter-spacing: 0.14em; transition: color 0.15s; }
+.brand p { font: 500 11px/1.2 var(--mono); color: var(--ink-3); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 2px; white-space: nowrap; }
+.site-link { font-size: 13px; color: var(--ink-2); text-decoration: none; padding: 6px 10px; border-radius: var(--r-1); white-space: nowrap; }
+.site-link:hover { color: var(--ink); background: var(--bg-2); }
 
-.tabs { display: flex; gap: 2px; margin-left: 8px; background: var(--bg-0); padding: 3px; border-radius: 6px; border: 1px solid var(--line); }
-.tab { padding: 6px 14px; border: 0; background: transparent; color: var(--ink-2); font-weight: 600; font-size: 13px; border-radius: 4px; }
-.tab:hover { color: var(--ink); }
-.tab.active { background: var(--bg-3); color: var(--ink); box-shadow: inset 0 -2px 0 var(--ns); }
 
 .hdr-right { margin-left: auto; display: flex; align-items: center; gap: 14px; min-width: 0; }
 .scenario-name { color: var(--ink-3); font-size: 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -28,7 +27,7 @@
   border: 1px solid var(--line-2); border-radius: 4px; background: var(--bg-0);
 }
 .annunciator .lamp { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-3); flex: none; }
-.ann-state { font-weight: 800; letter-spacing: 0.14em; font-size: 13px; line-height: 1.1; }
+.ann-state { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.14em; font-size: 14px; line-height: 1.1; }
 .ann-sub { font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.02em; }
 .annunciator.normal .lamp { background: var(--good); box-shadow: 0 0 10px var(--good); }
 .annunciator.normal .ann-state { color: var(--good); }
@@ -39,15 +38,15 @@
 .annunciator.optimized .lamp { background: var(--ns); box-shadow: 0 0 10px var(--ns); }
 .annunciator.optimized .ann-state { color: var(--ns); }
 
-.demo-btn { border-color: var(--ns); color: var(--ns); }
-.demo-btn.active, .btn.demo-btn.active:hover:not(:disabled) { background: var(--ns); color: var(--ns-ink); border-color: var(--ns); }
+.btn.demo-btn { padding: 9px 16px; font-size: 14px; letter-spacing: 0.01em; box-shadow: 0 0 0 1px rgba(46,230,214,0.25), 0 0 18px rgba(46,230,214,0.25); }
+.btn.demo-btn.active, .btn.demo-btn.active:hover:not(:disabled) { background: var(--bg-2); color: var(--ns); border-color: var(--ns); box-shadow: none; }
 
 .disclaimer {
   height: var(--disclaimer-h); display: flex; align-items: center; gap: 10px; padding: 0 16px;
   background: var(--warn-dim); color: #ffd58a; font-size: 12px; border-top: 1px solid rgba(255, 176, 32, 0.25);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.disc-icon { width: 15px; height: 15px; border-radius: 50%; background: var(--warn); color: #241600; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.disc-icon { width: 15px; height: 15px; border-radius: 50%; background: var(--warn); color: #241600; font-weight: 600; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 
 .conn-banner {
   display: flex; align-items: center; gap: 12px; padding: 8px 16px; font-size: 13px;
@@ -67,3 +66,7 @@
 .dataset-error h2 { font-size: 26px; margin: 8px 0 16px; }
 .dataset-error pre { background: var(--bg-2); border: 1px solid var(--danger); padding: 12px; border-radius: var(--r-2); white-space: pre-wrap; margin: 8px 0 16px; color: var(--danger); }
 .dataset-error p { margin-bottom: 8px; color: var(--ink-2); }
+
+/* Advanced switch locked while the guided demo is open. */
+.switch.locked { cursor: not-allowed; }
+.switch.locked .switch-track, .switch.locked .switch-label { opacity: 0.5; }

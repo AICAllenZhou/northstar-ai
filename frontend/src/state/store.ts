@@ -1,16 +1,44 @@
 import { create } from 'zustand'
 import { api, ApiError } from '../api/client'
+import { loadAdvanced, saveAdvanced } from '../lib/prefs'
+import { HREF, navigate } from '../router'
 import type {
   CompareResponse, DecisionRecord, DisruptionInput, ExperimentSummary, HealthResponse, ImpactResponse,
-  MetricInfo, NetworkResponse, Policy, Preset, RunResult, ScenarioState, StrategyName,
+  MetricInfo, NetworkResponse, Policy, Preset, RunResult, Scenario, ScenarioState, StrategyName,
 } from '../api/types'
 
-export type View = 'command' | 'research' | 'responsible'
+/** Legacy view names kept for the demo steps; each maps to a route. */
+export type View = 'command' | 'research' | 'responsible' | 'home' | 'data'
+export const VIEW_HREF: Record<View, string> = {
+  command: HREF.simulation,
+  research: HREF.research,
+  responsible: `${HREF.about}#responsible-ai`,
+  home: HREF.home,
+  data: HREF.data,
+}
 export type Connection = 'unknown' | 'ok' | 'down'
 export type SelectedKind = 'airport' | 'aircraft' | 'route' | 'mission' | 'decision'
 export interface Selected { kind: SelectedKind; id: string }
 export interface UiError { id: number; message: string; retry?: () => void }
 export type Busy = 'boot' | 'load' | 'reset' | 'disruption' | 'impact' | 'baseline' | 'northstar' | null
+/** Panels that can be scrolled to / opened from elsewhere in the interface. */
+export type FocusPanel = 'compare' | 'decisions' | 'disruption-form' | 'result' | 'why' | null
+
+/** The RUN NORTHSTAR moment: an overlay over the map while the request is in flight, then a replay of the real solver log. */
+export interface RunMoment {
+  seq: number
+  startedAt: number
+  /** When the HTTP response arrived (performance.now()); null while in flight. */
+  respondedAt: number | null
+  status: 'pending' | 'done' | 'error'
+  result: RunResult | null
+  error: string | null
+  /** Called when the viewer presses "See the result" (the demo advances; the panel focuses the result card). */
+  onDone?: () => void
+}
+
+/** A request to (re)start the guided demo, raised from anywhere (header, onboarding, preset cards, resume toast). */
+export interface DemoRequest { seq: number; preset?: string; step?: number }
 
 /** Default playback speed: 60 simulated minutes per real second (24 h in 24 s). */
 export const SPEEDS = [30, 60, 120, 240]
@@ -23,6 +51,7 @@ export interface StoreState {
   ready: boolean
   network: NetworkResponse | null
   presets: Preset[]
+  presetDetails: Record<string, Scenario>
   policies: Policy[]
   metricInfo: Record<string, MetricInfo>
   primaryMetrics: string[]
@@ -34,6 +63,8 @@ export interface StoreState {
   experiments: ExperimentSummary | null
   experimentsMissing: boolean
   experimentsError: string | null
+  /** Scenario id currently being fetched and loaded by openExperimentScenario (the Research page's "Open in simulator"). */
+  openingScenario: string | null
   policyId: string
   displayedRun: StrategyName | null
   t: number
@@ -43,22 +74,36 @@ export interface StoreState {
   highlightAircraft: string[]
   highlightPath: string[] | null
   expandedDecision: string | null
-  focusPanel: 'compare' | 'decisions' | null
+  focusPanel: FocusPanel
   busy: Busy
   errors: UiError[]
+  advanced: boolean
+  runMoment: RunMoment | null
+  demoRequest: DemoRequest | null
+  /** True while the guided demo overlay is open (set by App); simple-mode panels hide their own demo button. */
+  demoActive: boolean
 
   setView: (v: View) => void
+  setAdvanced: (v: boolean) => void
+  requestDemo: (preset?: string, step?: number) => void
   bootstrap: () => Promise<void>
   pollHealth: () => Promise<void>
   loadPreset: (id: string) => Promise<void>
+  getPresetDetail: (id: string) => Promise<Scenario>
+  /** Load the preset restricted to the given disruption ids (the guided demo adds one at a time). No-op when already loaded. */
+  loadDemoScenario: (presetId: string, ids: string[]) => Promise<void>
   resetScenario: () => Promise<void>
   addDisruption: (d: DisruptionInput) => Promise<void>
   removeDisruption: (id: string) => Promise<void>
   fetchImpact: (display?: boolean) => Promise<ImpactResponse>
   runBaseline: () => Promise<RunResult>
   runNorthstar: (policyId?: string) => Promise<RunResult>
+  startNorthstarRun: (policyId?: string, onDone?: () => void) => void
+  closeRunMoment: () => void
   refreshCompare: () => Promise<void>
   loadExperiments: () => Promise<void>
+  /** Fetch one generated experiment scenario, load it into the simulator session and go to the simulation route. */
+  openExperimentScenario: (scenarioId: string) => Promise<void>
   setDisplayedRun: (r: StrategyName | null) => void
   setTime: (t: number) => void
   play: () => void
@@ -68,13 +113,15 @@ export interface StoreState {
   setHighlight: (aircraft: string[], path: string[] | null) => void
   highlightDecision: (d: DecisionRecord | null) => void
   setExpandedDecision: (id: string | null) => void
-  setFocusPanel: (p: 'compare' | 'decisions' | null) => void
+  setFocusPanel: (p: FocusPanel) => void
   setPolicyId: (id: string) => void
   pushError: (message: string, retry?: () => void) => void
   dismissError: (id: number) => void
 }
 
 let errorSeq = 1
+let momentSeq = 0
+let demoSeq = 0
 /** For fire-and-forget calls: errors are already reported through the store. */
 const quiet = (p: Promise<unknown>) => { p.catch(() => undefined) }
 
@@ -118,6 +165,7 @@ export const useStore = create<StoreState>()((set, get) => {
     ready: false,
     network: null,
     presets: [],
+    presetDetails: {},
     policies: [],
     metricInfo: {},
     primaryMetrics: [],
@@ -129,6 +177,7 @@ export const useStore = create<StoreState>()((set, get) => {
     experiments: null,
     experimentsMissing: false,
     experimentsError: null,
+    openingScenario: null,
     policyId: 'balanced',
     displayedRun: null,
     t: 0,
@@ -141,8 +190,14 @@ export const useStore = create<StoreState>()((set, get) => {
     focusPanel: null,
     busy: null,
     errors: [],
+    advanced: loadAdvanced(),
+    runMoment: null,
+    demoRequest: null,
+    demoActive: false,
 
-    setView: (view) => set({ view }),
+    setView: (view) => { set({ view }); navigate(VIEW_HREF[view]) },
+    setAdvanced: (advanced) => { saveAdvanced(advanced); set({ advanced }) },
+    requestDemo: (preset, step) => set({ demoRequest: { seq: ++demoSeq, preset, step } }),
 
     bootstrap: async () => {
       await guarded('boot', async () => {
@@ -178,6 +233,25 @@ export const useStore = create<StoreState>()((set, get) => {
 
     loadPreset: async (id) => {
       const st = await guarded('load', () => api.loadPreset(id), () => quiet(get().loadPreset(id)))
+      applyScenario(st)
+    },
+
+    getPresetDetail: async (id) => {
+      const cached = get().presetDetails[id]
+      if (cached) return cached
+      const detail = await api.presetDetail(id)
+      set((s) => ({ presetDetails: { ...s.presetDetails, [id]: detail } }))
+      return detail
+    },
+
+    loadDemoScenario: async (presetId, ids) => {
+      const detail = await get().getPresetDetail(presetId)
+      const wanted = new Set(ids)
+      const cur = get().scenario?.scenario
+      if (cur && cur.id === detail.id && cur.disruptions.length === wanted.size && cur.disruptions.every((d) => wanted.has(d.id))) return
+      // Keep the preset's own order so the fully built scenario is byte-identical to the preset (cache hits).
+      const scenario: Scenario = { ...detail, disruptions: detail.disruptions.filter((d) => wanted.has(d.id)) }
+      const st = await guarded('load', () => api.loadScenario(scenario), () => quiet(get().loadDemoScenario(presetId, ids)))
       applyScenario(st)
     },
 
@@ -233,6 +307,20 @@ export const useStore = create<StoreState>()((set, get) => {
       return run
     },
 
+    startNorthstarRun: (policyId, onDone) => {
+      const seq = ++momentSeq
+      get().pause()
+      set({ runMoment: { seq, startedAt: performance.now(), respondedAt: null, status: 'pending', result: null, error: null, onDone } })
+      const patch = (p: Partial<RunMoment>) => {
+        const m = get().runMoment
+        if (m && m.seq === seq) set({ runMoment: { ...m, ...p } })
+      }
+      get().runNorthstar(policyId)
+        .then((result) => patch({ status: 'done', result, respondedAt: performance.now() }))
+        .catch((e) => patch({ status: 'error', error: e instanceof Error ? e.message : String(e), respondedAt: performance.now() }))
+    },
+    closeRunMoment: () => set({ runMoment: null }),
+
     refreshCompare: async () => {
       const sc = get().scenario
       try {
@@ -251,6 +339,17 @@ export const useStore = create<StoreState>()((set, get) => {
         if (e instanceof ApiError && e.status === 404) set({ experiments: null, experimentsMissing: true, experimentsError: null })
         else if (e instanceof ApiError && e.unreachable) set({ connection: 'down', experimentsError: 'Backend unreachable.' })
         else set({ experimentsError: e instanceof Error ? e.message : String(e) })
+      }
+    },
+
+    openExperimentScenario: async (scenarioId) => {
+      set({ openingScenario: scenarioId })
+      try {
+        const st = await guarded('load', async () => api.loadScenario(await api.experimentScenario(scenarioId)), () => quiet(get().openExperimentScenario(scenarioId)))
+        applyScenario(st)
+        navigate(HREF.simulation)
+      } finally {
+        if (get().openingScenario === scenarioId) set({ openingScenario: null })
       }
     },
 
@@ -282,3 +381,5 @@ export const useStore = create<StoreState>()((set, get) => {
 
 export const selectDisplayedRun = (s: StoreState): RunResult | null => (s.displayedRun ? s.runs[s.displayedRun] ?? null : null)
 export const selectControlsDisabled = (s: StoreState): boolean => s.connection === 'down' || !s.ready || s.busy !== null
+export const selectHasDisruptions = (s: StoreState): boolean => (s.scenario?.scenario.disruptions.length ?? 0) > 0
+export const selectWarm = (s: StoreState): boolean => s.health?.warmup?.state === 'done'
