@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NORTHSTAR AI Demo</title>
+<meta name="description" content="Demo video of NORTHSTAR AI, an aviation resilience simulation for remote and Northern Canadian communities.">
+<meta property="og:title" content="NORTHSTAR AI Demo">
+<meta property="og:description" content="AI-powered aviation resilience simulation for remote and Northern Canadian communities.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  /* Same polar-night palette and teal accent as the NORTHSTAR AI command centre (frontend/src/styles/tokens.css). */
+  :root {
+    color-scheme: dark;
+    --bg-0: #0a0f15;
+    --bg-1: #10171f;
+    --line: #233040;
+    --ink: #eef3f8;
+    --ink-2: #a9b6c4;
+    --ink-3: #6f8090;
+    --ns: #2ee6d6;
+    --ns-dim: rgba(46, 230, 214, 0.14);
+    --warn: #ffb020;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg-0); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.55; }
+  main {
+    max-width: 1120px; margin: 0 auto; display: grid; gap: 22px;
+    padding-block: max(28px, env(safe-area-inset-top, 0px)) max(36px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 30px; height: 30px; flex: none; background: var(--ns);
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  }
+  h1 { margin: 0; font-size: clamp(20px, 3.4vw, 26px); font-weight: 800; letter-spacing: 0.16em; line-height: 1.1; }
+  .tagline { margin: 2px 0 0; color: var(--ink-2); font-size: 13px; letter-spacing: 0.03em; }
+  .player {
+    background: #000; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    aspect-ratio: 16 / 9; max-width: 100%; box-shadow: 0 0 0 1px var(--ns-dim), 0 18px 48px rgba(0, 0, 0, 0.55);
+  }
+  video { display: block; width: 100%; height: 100%; background: #000; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .meta b { color: var(--ns); font-weight: 500; }
+  .about { max-width: 68ch; color: var(--ink-2); margin: 0; }
+  .disclaimer {
+    display: flex; gap: 10px; align-items: flex-start; background: var(--bg-1); border: 1px solid var(--line);
+    border-radius: 6px; padding: 10px 12px; font-size: 12.5px; color: var(--ink-2);
+  }
+  .disclaimer span:first-child {
+    flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--warn); color: var(--bg-0);
+    font-weight: 800; font-size: 12px; display: grid; place-items: center; margin-top: 1px;
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <div>
+      <h1>NORTHSTAR AI</h1>
+      <p class="tagline">Northern Aviation Resilience Command Center</p>
+    </div>
+  </div>
+  <div class="player">
+    <video controls playsinline preload="metadata" src="northstar-ai-demo.mp4"></video>
+  </div>
+  <div class="meta">
+    <span><b>DEMO</b> 1:18</span>
+    <span>1920 × 1080</span>
+    <span>Sound on</span>
+  </div>
+  <p class="about">
+    NORTHSTAR AI compares a rule-based dispatcher with a constraint-programming optimizer on identical
+    disruption scenarios across Nunavut's fly-in communities, and explains every decision it makes.
+  </p>
+  <div class="disclaimer" role="note">
+    <span aria-hidden="true">!</span>
+    <span>NORTHSTAR AI is a research simulation and decision-support prototype. It is not approved for real-world flight operations, medical decisions, or aviation dispatch.</span>
+  </div>
+</main>
+</body>
+</html>
